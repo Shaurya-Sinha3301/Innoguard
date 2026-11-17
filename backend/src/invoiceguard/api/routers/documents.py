@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from invoiceguard.api import schemas
 from invoiceguard.api.auth import current_user
 from invoiceguard.api.deps import get_session
+from invoiceguard.api.ratelimit import UPLOAD_GUARDS, WRITE_GUARDS
 from invoiceguard.db import models as m
 from invoiceguard.extraction.service import MAX_UPLOAD_BYTES
 from invoiceguard.jobs.documents import replay_failed, submit_document
@@ -15,7 +16,9 @@ from invoiceguard.workflow.errors import IllegalTransition, InvoiceNotFound
 router = APIRouter(tags=["documents"])
 
 
-@router.post("/documents", response_model=schemas.InvoiceOut, status_code=202)
+@router.post(
+    "/documents", response_model=schemas.InvoiceOut, status_code=202, dependencies=UPLOAD_GUARDS
+)
 async def upload_document(
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
@@ -71,7 +74,9 @@ def list_failed_jobs(
     )
 
 
-@router.post("/invoices/{invoice_id}/replay", response_model=schemas.InvoiceOut)
+@router.post(
+    "/invoices/{invoice_id}/replay", response_model=schemas.InvoiceOut, dependencies=WRITE_GUARDS
+)
 def replay(
     invoice_id: uuid.UUID,
     session: Session = Depends(get_session),

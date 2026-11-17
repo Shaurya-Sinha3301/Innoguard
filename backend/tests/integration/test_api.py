@@ -3,7 +3,7 @@ import random
 import pytest
 from fastapi.testclient import TestClient
 
-from invoiceguard.api import deps
+from invoiceguard.api import deps, ratelimit
 from invoiceguard.api.main import app
 from invoiceguard.api.schemas import InvoiceIn
 from invoiceguard.config import settings
@@ -16,9 +16,19 @@ ASHA = {"X-API-Key": "key-asha"}
 RAVI = {"X-API-Key": "key-ravi"}
 
 
+class MemoryCounter:
+    def __init__(self):
+        self.counts = {}
+
+    def incr(self, key, ttl_seconds):
+        self.counts[key] = self.counts.get(key, 0) + 1
+        return self.counts[key]
+
+
 @pytest.fixture
 def client(session_factory, monkeypatch):
     monkeypatch.setattr(settings, "api_keys", "key-asha:asha,key-ravi:ravi")
+    monkeypatch.setattr(ratelimit, "counter", MemoryCounter())
 
     def override_session():
         session = session_factory()
@@ -180,6 +190,24 @@ def test_replay_of_a_healthy_invoice_is_a_409(client, session_factory):
     invoice = client.post("/invoices", json=body, headers=ASHA).json()
     assert client.post(f"/invoices/{invoice['id']}/replay", headers=ASHA).status_code == 409
     assert client.get("/failed-jobs", headers=ASHA).json() == []
+
+
+def test_writes_are_rate_limited_per_reviewer(client, session_factory, monkeypatch):
+    monkeypatch.setattr(settings, "rate_limit_writes_per_minute", 2)
+    body = payload_for(session_factory, CaseLabel.CLEAN, 30)
+    invoice = client.post("/invoices", json=body, headers=ASHA).json()
+    path = f"/invoices/{invoice['id']}/post"
+    assert client.post(path, headers=ASHA).status_code == 200  # second write this minute
+    assert client.post(path, headers=ASHA).status_code == 429  # third is refused
+    assert client.post(path, headers=RAVI).status_code == 200  # other reviewers unaffected
+    assert client.get("/invoices", headers=ASHA).status_code == 200  # reads are not limited
+
+
+def test_kill_switch_pauses_writes_but_not_reads(client, session_factory, monkeypatch):
+    monkeypatch.setattr(settings, "writes_enabled", False)
+    body = payload_for(session_factory, CaseLabel.CLEAN, 31)
+    assert client.post("/invoices", json=body, headers=ASHA).status_code == 503
+    assert client.get("/invoices", headers=ASHA).status_code == 200
 
 
 def test_json_numbers_keep_decimal_precision():

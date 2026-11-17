@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +17,20 @@ class Settings(BaseSettings):
     extraction_max_attempts: int = 4
     # Comma-separated browser origins allowed to call the API (the review UI).
     cors_origins: str = "http://localhost:5173"
+    # Public-demo safety: per-key limits on writes and uploads, and a switch to pause writes.
+    rate_limit_writes_per_minute: int = 60
+    rate_limit_uploads_per_minute: int = 10
+    writes_enabled: bool = True
+
+    @field_validator("database_url")
+    @classmethod
+    def _use_psycopg_driver(cls, url: str) -> str:
+        """Hosted Postgres (Neon, Render) hands out postgres:// or postgresql:// URLs;
+        SQLAlchemy needs the driver named explicitly."""
+        for prefix in ("postgres://", "postgresql://"):
+            if url.startswith(prefix):
+                return "postgresql+psycopg://" + url[len(prefix) :]
+        return url
 
 
 settings = Settings()

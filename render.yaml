@@ -1,0 +1,55 @@
+# Render Blueprint for the InvoiceGuard API and background worker.
+# Postgres comes from Neon and Redis from Upstash (or any Redis); paste their URLs when
+# Render prompts for the sync: false values. See docs/deploy.md before applying.
+services:
+  - type: web
+    name: invoiceguard-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./deploy/Dockerfile.backend
+    dockerContext: .
+    # Single instance in Release 1, so migrating at start-up is safe. With several
+    # instances, move this to a paid pre-deploy command instead.
+    dockerCommand: sh -c "alembic upgrade head && uvicorn invoiceguard.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: API_KEYS
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: EXTRACTION_MODE
+        value: replay
+      - key: EXTRACTION_MODEL
+        value: claude-haiku-5-5
+      - key: WRITES_ENABLED
+        value: "true"
+      - key: RATE_LIMIT_WRITES_PER_MINUTE
+        value: "30"
+      - key: RATE_LIMIT_UPLOADS_PER_MINUTE
+        value: "5"
+
+  # Workers have no free plan on Render. To keep the demo to one paid instance, this
+  # container runs the outbox dispatcher alongside the Celery worker. Trade-off: if the
+  # dispatcher process dies, nothing restarts it until the container restarts.
+  - type: worker
+    name: invoiceguard-worker
+    runtime: docker
+    plan: 0.5c-512mb
+    dockerfilePath: ./deploy/Dockerfile.backend
+    dockerContext: .
+    dockerCommand: sh -c "python -m invoiceguard.jobs.dispatcher & exec celery -A invoiceguard.jobs.celery_app worker --loglevel=info --concurrency=2"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: EXTRACTION_MODE
+        value: replay
+      - key: EXTRACTION_MODEL
+        value: claude-haiku-5-5
+      - key: ANTHROPIC_API_KEY
+        sync: false

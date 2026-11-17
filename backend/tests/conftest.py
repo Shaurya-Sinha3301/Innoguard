@@ -8,8 +8,10 @@ import sqlalchemy as sa
 from alembic import command
 from alembic.config import Config
 from sqlalchemy.engine import make_url
+from sqlalchemy.orm import sessionmaker
 
 from invoiceguard.config import settings
+from invoiceguard.db.models import Base
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 TEST_DB_NAME = "invoiceguard_test"
@@ -42,6 +44,23 @@ def test_database_url() -> str:
 
 @pytest.fixture(scope="session")
 def engine(test_database_url):
-    eng = sa.create_engine(test_database_url)
+    eng = sa.create_engine(test_database_url, pool_size=10)
     yield eng
     eng.dispose()
+
+
+@pytest.fixture
+def session_factory(engine):
+    return sessionmaker(engine, expire_on_commit=False)
+
+
+@pytest.fixture
+def clean_db(engine):
+    """Empty every table before a test. Audit events are append-only, so the trigger is
+    switched off for this test-only wipe and switched back on straight after."""
+    tables = ", ".join(t.name for t in Base.metadata.sorted_tables)
+    with engine.begin() as conn:
+        conn.execute(sa.text("ALTER TABLE audit_events DISABLE TRIGGER USER"))
+        conn.execute(sa.text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
+        conn.execute(sa.text("ALTER TABLE audit_events ENABLE TRIGGER USER"))
+    yield

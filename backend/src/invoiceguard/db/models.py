@@ -88,15 +88,16 @@ class Invoice(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         sa.Uuid, primary_key=True, server_default=sa.text("gen_random_uuid()")
     )
-    invoice_number: Mapped[str] = mapped_column(sa.Text)
-    number_norm: Mapped[str] = mapped_column(sa.Text)
-    vendor_id: Mapped[str] = mapped_column(sa.Text)
+    # Header fields are empty for an uploaded document until extraction fills them.
+    invoice_number: Mapped[str | None] = mapped_column(sa.Text)
+    number_norm: Mapped[str | None] = mapped_column(sa.Text)
+    vendor_id: Mapped[str | None] = mapped_column(sa.Text)
     po_number: Mapped[str | None] = mapped_column(sa.Text)
-    currency: Mapped[str] = mapped_column(sa.String(3))
+    currency: Mapped[str | None] = mapped_column(sa.String(3))
     invoice_type: Mapped[str] = mapped_column(sa.Text, server_default="INVOICE")
-    subtotal: Mapped[Decimal] = mapped_column(MONEY)
-    tax: Mapped[Decimal] = mapped_column(MONEY)
-    total: Mapped[Decimal] = mapped_column(MONEY)
+    subtotal: Mapped[Decimal | None] = mapped_column(MONEY)
+    tax: Mapped[Decimal | None] = mapped_column(MONEY)
+    total: Mapped[Decimal | None] = mapped_column(MONEY)
     file_hash: Mapped[str] = mapped_column(sa.Text)
     status: Mapped[str] = mapped_column(sa.Text, server_default="RECEIVED")
     version: Mapped[int] = mapped_column(server_default="1")
@@ -109,6 +110,22 @@ class Invoice(Base):
     )
 
     lines: Mapped[list["InvoiceLine"]] = relationship(cascade="all, delete-orphan")
+
+
+class Document(Base):
+    """The uploaded file. Stored in Postgres for Release 1; object storage is Release 2."""
+
+    __tablename__ = "documents"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    invoice_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("invoices.id"), unique=True)
+    filename: Mapped[str] = mapped_column(sa.Text)
+    content_type: Mapped[str] = mapped_column(sa.Text)
+    template_id: Mapped[str | None] = mapped_column(sa.Text)
+    data: Mapped[bytes] = mapped_column(sa.LargeBinary)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=_now()
+    )
 
 
 class InvoiceLine(Base):

@@ -1,0 +1,15 @@
+{
+  "oracle": {
+    "decision_accuracy_min": 1.0,
+    "false_approvals_max": 0,
+    "misread_auto_approvals_max": 0
+  },
+  "noisy": {
+    "false_approvals_max": 0,
+    "misread_auto_approvals_max": 0
+  },
+  "replay": {
+    "false_approvals_max": 0,
+    "misread_auto_approvals_max": 0
+  }
+}

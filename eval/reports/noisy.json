@@ -1,0 +1,143 @@
+{
+  "overall": {
+    "cases": 216,
+    "false_approvals": 0,
+    "misread_auto_approvals": 0,
+    "false_approval_proportion": 0.0,
+    "bad_invoice_escape_rate": 0.0,
+    "detection_precision": 0.8438,
+    "detection_recall": 1.0,
+    "straight_through_rate": 0.6667,
+    "review_rate": 0.8056,
+    "decision_accuracy": 0.9444,
+    "field_exact_match": {
+      "invoice_number": 1.0,
+      "vendor_id": 0.9259,
+      "po_number": 0.9398,
+      "currency": 1.0,
+      "subtotal": 1.0,
+      "tax": 1.0,
+      "total": 0.9259,
+      "lines": 0.8796
+    },
+    "model_calls": 0,
+    "p50_latency_ms": null,
+    "p95_latency_ms": null,
+    "cost_per_request_usd": null,
+    "avg_tokens_per_second": null
+  },
+  "by_split": {
+    "dev": {
+      "cases": 144,
+      "false_approvals": 0,
+      "misread_auto_approvals": 0,
+      "false_approval_proportion": 0.0,
+      "bad_invoice_escape_rate": 0.0,
+      "detection_precision": 0.8308,
+      "detection_recall": 1.0,
+      "straight_through_rate": 0.5833,
+      "review_rate": 0.8194,
+      "decision_accuracy": 0.9306,
+      "field_exact_match": {
+        "invoice_number": 1.0,
+        "vendor_id": 0.9236,
+        "po_number": 0.9167,
+        "currency": 1.0,
+        "subtotal": 1.0,
+        "tax": 1.0,
+        "total": 0.9306,
+        "lines": 0.875
+      },
+      "model_calls": 0,
+      "p50_latency_ms": null,
+      "p95_latency_ms": null,
+      "cost_per_request_usd": null,
+      "avg_tokens_per_second": null
+    },
+    "held_out": {
+      "cases": 72,
+      "false_approvals": 0,
+      "misread_auto_approvals": 0,
+      "false_approval_proportion": 0.0,
+      "bad_invoice_escape_rate": 0.0,
+      "detection_precision": 0.871,
+      "detection_recall": 1.0,
+      "straight_through_rate": 0.8333,
+      "review_rate": 0.7778,
+      "decision_accuracy": 0.9722,
+      "field_exact_match": {
+        "invoice_number": 1.0,
+        "vendor_id": 0.9306,
+        "po_number": 0.9861,
+        "currency": 1.0,
+        "subtotal": 1.0,
+        "tax": 1.0,
+        "total": 0.9167,
+        "lines": 0.8889
+      },
+      "model_calls": 0,
+      "p50_latency_ms": null,
+      "p95_latency_ms": null,
+      "cost_per_request_usd": null,
+      "avg_tokens_per_second": null
+    }
+  },
+  "escaped_bad_invoices": [],
+  "curve": [
+    {
+      "threshold": 0.5,
+      "coverage": 0.1204,
+      "escape_rate": 0.0
+    },
+    {
+      "threshold": 0.55,
+      "coverage": 0.1204,
+      "escape_rate": 0.0
+    },
+    {
+      "threshold": 0.6,
+      "coverage": 0.1111,
+      "escape_rate": 0.0
+    },
+    {
+      "threshold": 0.65,
+      "coverage": 0.1111,
+      "escape_rate": 0.0
+    },
+    {
+      "threshold": 0.7,
+      "coverage": 0.1111,
+      "escape_rate": 0.0
+    },
+    {
+      "threshold": 0.75,
+      "coverage": 0.1111,
+      "escape_rate": 0.0
+    },
+    {
+      "threshold": 0.8,
+      "coverage": 0.1111,
+      "escape_rate": 0.0
+    },
+    {
+      "threshold": 0.85,
+      "coverage": 0.1111,
+      "escape_rate": 0.0
+    },
+    {
+      "threshold": 0.9,
+      "coverage": 0.1111,
+      "escape_rate": 0.0
+    },
+    {
+      "threshold": 0.95,
+      "coverage": 0.1111,
+      "escape_rate": 0.0
+    },
+    {
+      "threshold": 0.99,
+      "coverage": 0.0,
+      "escape_rate": 0.0
+    }
+  ]
+}

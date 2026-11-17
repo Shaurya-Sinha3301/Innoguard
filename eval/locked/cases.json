@@ -1,0 +1,1521 @@
+{
+  "description": "Locked evaluation set. Do not tune prompts or thresholds on it.",
+  "held_out_templates": [
+    "ledger"
+  ],
+  "sha256": "0380a1e1493cd5885c423be6f0ffcddcd54849b400096f46cf476a633a3404e3",
+  "cases": [
+    {
+      "case_id": "clean-000",
+      "index": 100000,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-001",
+      "index": 100001,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-002",
+      "index": 100002,
+      "label": "CLEAN",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "clean-003",
+      "index": 100003,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-004",
+      "index": 100004,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-005",
+      "index": 100005,
+      "label": "CLEAN",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "clean-006",
+      "index": 100006,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-007",
+      "index": 100007,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-008",
+      "index": 100008,
+      "label": "CLEAN",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "clean-009",
+      "index": 100009,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-010",
+      "index": 100010,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-011",
+      "index": 100011,
+      "label": "CLEAN",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "clean-012",
+      "index": 100012,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-013",
+      "index": 100013,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-014",
+      "index": 100014,
+      "label": "CLEAN",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "clean-015",
+      "index": 100015,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-016",
+      "index": 100016,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-017",
+      "index": 100017,
+      "label": "CLEAN",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-000",
+      "index": 101000,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-001",
+      "index": 101001,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-002",
+      "index": 101002,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-003",
+      "index": 101003,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-004",
+      "index": 101004,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-005",
+      "index": 101005,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-006",
+      "index": 101006,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-007",
+      "index": 101007,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-008",
+      "index": 101008,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-009",
+      "index": 101009,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-010",
+      "index": 101010,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-011",
+      "index": 101011,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-012",
+      "index": 101012,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-013",
+      "index": 101013,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-014",
+      "index": 101014,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-015",
+      "index": 101015,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-016",
+      "index": 101016,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_billed_correctly-017",
+      "index": 101017,
+      "label": "PARTIAL_RECEIPT_BILLED_CORRECTLY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-000",
+      "index": 102000,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-001",
+      "index": 102001,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-002",
+      "index": 102002,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-003",
+      "index": 102003,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-004",
+      "index": 102004,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-005",
+      "index": 102005,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-006",
+      "index": 102006,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-007",
+      "index": 102007,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-008",
+      "index": 102008,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-009",
+      "index": 102009,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-010",
+      "index": 102010,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-011",
+      "index": 102011,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-012",
+      "index": 102012,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-013",
+      "index": 102013,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-014",
+      "index": 102014,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-015",
+      "index": 102015,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-016",
+      "index": 102016,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "partial_receipt_overbilled-017",
+      "index": 102017,
+      "label": "PARTIAL_RECEIPT_OVERBILLED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "price_variance-000",
+      "index": 103000,
+      "label": "PRICE_VARIANCE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-001",
+      "index": 103001,
+      "label": "PRICE_VARIANCE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-002",
+      "index": 103002,
+      "label": "PRICE_VARIANCE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "price_variance-003",
+      "index": 103003,
+      "label": "PRICE_VARIANCE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-004",
+      "index": 103004,
+      "label": "PRICE_VARIANCE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-005",
+      "index": 103005,
+      "label": "PRICE_VARIANCE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "price_variance-006",
+      "index": 103006,
+      "label": "PRICE_VARIANCE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-007",
+      "index": 103007,
+      "label": "PRICE_VARIANCE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-008",
+      "index": 103008,
+      "label": "PRICE_VARIANCE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "price_variance-009",
+      "index": 103009,
+      "label": "PRICE_VARIANCE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-010",
+      "index": 103010,
+      "label": "PRICE_VARIANCE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-011",
+      "index": 103011,
+      "label": "PRICE_VARIANCE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "price_variance-012",
+      "index": 103012,
+      "label": "PRICE_VARIANCE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-013",
+      "index": 103013,
+      "label": "PRICE_VARIANCE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-014",
+      "index": 103014,
+      "label": "PRICE_VARIANCE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "price_variance-015",
+      "index": 103015,
+      "label": "PRICE_VARIANCE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-016",
+      "index": 103016,
+      "label": "PRICE_VARIANCE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "price_variance-017",
+      "index": 103017,
+      "label": "PRICE_VARIANCE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "qty_over_ordered-000",
+      "index": 104000,
+      "label": "QTY_OVER_ORDERED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-001",
+      "index": 104001,
+      "label": "QTY_OVER_ORDERED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-002",
+      "index": 104002,
+      "label": "QTY_OVER_ORDERED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "qty_over_ordered-003",
+      "index": 104003,
+      "label": "QTY_OVER_ORDERED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-004",
+      "index": 104004,
+      "label": "QTY_OVER_ORDERED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-005",
+      "index": 104005,
+      "label": "QTY_OVER_ORDERED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "qty_over_ordered-006",
+      "index": 104006,
+      "label": "QTY_OVER_ORDERED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-007",
+      "index": 104007,
+      "label": "QTY_OVER_ORDERED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-008",
+      "index": 104008,
+      "label": "QTY_OVER_ORDERED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "qty_over_ordered-009",
+      "index": 104009,
+      "label": "QTY_OVER_ORDERED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-010",
+      "index": 104010,
+      "label": "QTY_OVER_ORDERED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-011",
+      "index": 104011,
+      "label": "QTY_OVER_ORDERED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "qty_over_ordered-012",
+      "index": 104012,
+      "label": "QTY_OVER_ORDERED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-013",
+      "index": 104013,
+      "label": "QTY_OVER_ORDERED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-014",
+      "index": 104014,
+      "label": "QTY_OVER_ORDERED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "qty_over_ordered-015",
+      "index": 104015,
+      "label": "QTY_OVER_ORDERED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-016",
+      "index": 104016,
+      "label": "QTY_OVER_ORDERED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "qty_over_ordered-017",
+      "index": 104017,
+      "label": "QTY_OVER_ORDERED",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_receipt-000",
+      "index": 105000,
+      "label": "NO_RECEIPT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-001",
+      "index": 105001,
+      "label": "NO_RECEIPT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-002",
+      "index": 105002,
+      "label": "NO_RECEIPT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_receipt-003",
+      "index": 105003,
+      "label": "NO_RECEIPT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-004",
+      "index": 105004,
+      "label": "NO_RECEIPT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-005",
+      "index": 105005,
+      "label": "NO_RECEIPT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_receipt-006",
+      "index": 105006,
+      "label": "NO_RECEIPT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-007",
+      "index": 105007,
+      "label": "NO_RECEIPT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-008",
+      "index": 105008,
+      "label": "NO_RECEIPT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_receipt-009",
+      "index": 105009,
+      "label": "NO_RECEIPT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-010",
+      "index": 105010,
+      "label": "NO_RECEIPT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-011",
+      "index": 105011,
+      "label": "NO_RECEIPT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_receipt-012",
+      "index": 105012,
+      "label": "NO_RECEIPT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-013",
+      "index": 105013,
+      "label": "NO_RECEIPT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-014",
+      "index": 105014,
+      "label": "NO_RECEIPT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_receipt-015",
+      "index": 105015,
+      "label": "NO_RECEIPT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-016",
+      "index": 105016,
+      "label": "NO_RECEIPT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_receipt-017",
+      "index": 105017,
+      "label": "NO_RECEIPT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_po-000",
+      "index": 106000,
+      "label": "NO_PO",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-001",
+      "index": 106001,
+      "label": "NO_PO",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-002",
+      "index": 106002,
+      "label": "NO_PO",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_po-003",
+      "index": 106003,
+      "label": "NO_PO",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-004",
+      "index": 106004,
+      "label": "NO_PO",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-005",
+      "index": 106005,
+      "label": "NO_PO",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_po-006",
+      "index": 106006,
+      "label": "NO_PO",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-007",
+      "index": 106007,
+      "label": "NO_PO",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-008",
+      "index": 106008,
+      "label": "NO_PO",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_po-009",
+      "index": 106009,
+      "label": "NO_PO",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-010",
+      "index": 106010,
+      "label": "NO_PO",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-011",
+      "index": 106011,
+      "label": "NO_PO",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_po-012",
+      "index": 106012,
+      "label": "NO_PO",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-013",
+      "index": 106013,
+      "label": "NO_PO",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-014",
+      "index": 106014,
+      "label": "NO_PO",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_po-015",
+      "index": 106015,
+      "label": "NO_PO",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-016",
+      "index": 106016,
+      "label": "NO_PO",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_po-017",
+      "index": 106017,
+      "label": "NO_PO",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "vendor_mismatch-000",
+      "index": 107000,
+      "label": "VENDOR_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-001",
+      "index": 107001,
+      "label": "VENDOR_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-002",
+      "index": 107002,
+      "label": "VENDOR_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "vendor_mismatch-003",
+      "index": 107003,
+      "label": "VENDOR_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-004",
+      "index": 107004,
+      "label": "VENDOR_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-005",
+      "index": 107005,
+      "label": "VENDOR_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "vendor_mismatch-006",
+      "index": 107006,
+      "label": "VENDOR_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-007",
+      "index": 107007,
+      "label": "VENDOR_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-008",
+      "index": 107008,
+      "label": "VENDOR_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "vendor_mismatch-009",
+      "index": 107009,
+      "label": "VENDOR_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-010",
+      "index": 107010,
+      "label": "VENDOR_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-011",
+      "index": 107011,
+      "label": "VENDOR_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "vendor_mismatch-012",
+      "index": 107012,
+      "label": "VENDOR_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-013",
+      "index": 107013,
+      "label": "VENDOR_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-014",
+      "index": 107014,
+      "label": "VENDOR_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "vendor_mismatch-015",
+      "index": 107015,
+      "label": "VENDOR_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-016",
+      "index": 107016,
+      "label": "VENDOR_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "vendor_mismatch-017",
+      "index": 107017,
+      "label": "VENDOR_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "total_mismatch-000",
+      "index": 108000,
+      "label": "TOTAL_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-001",
+      "index": 108001,
+      "label": "TOTAL_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-002",
+      "index": 108002,
+      "label": "TOTAL_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "total_mismatch-003",
+      "index": 108003,
+      "label": "TOTAL_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-004",
+      "index": 108004,
+      "label": "TOTAL_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-005",
+      "index": 108005,
+      "label": "TOTAL_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "total_mismatch-006",
+      "index": 108006,
+      "label": "TOTAL_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-007",
+      "index": 108007,
+      "label": "TOTAL_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-008",
+      "index": 108008,
+      "label": "TOTAL_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "total_mismatch-009",
+      "index": 108009,
+      "label": "TOTAL_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-010",
+      "index": 108010,
+      "label": "TOTAL_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-011",
+      "index": 108011,
+      "label": "TOTAL_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "total_mismatch-012",
+      "index": 108012,
+      "label": "TOTAL_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-013",
+      "index": 108013,
+      "label": "TOTAL_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-014",
+      "index": 108014,
+      "label": "TOTAL_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "total_mismatch-015",
+      "index": 108015,
+      "label": "TOTAL_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-016",
+      "index": 108016,
+      "label": "TOTAL_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "total_mismatch-017",
+      "index": 108017,
+      "label": "TOTAL_MISMATCH",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-000",
+      "index": 109000,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-001",
+      "index": 109001,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-002",
+      "index": 109002,
+      "label": "DUPLICATE_EXACT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-003",
+      "index": 109003,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-004",
+      "index": 109004,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-005",
+      "index": 109005,
+      "label": "DUPLICATE_EXACT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-006",
+      "index": 109006,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-007",
+      "index": 109007,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-008",
+      "index": 109008,
+      "label": "DUPLICATE_EXACT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-009",
+      "index": 109009,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-010",
+      "index": 109010,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-011",
+      "index": 109011,
+      "label": "DUPLICATE_EXACT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-012",
+      "index": 109012,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-013",
+      "index": 109013,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-014",
+      "index": 109014,
+      "label": "DUPLICATE_EXACT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-015",
+      "index": 109015,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-016",
+      "index": 109016,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-017",
+      "index": 109017,
+      "label": "DUPLICATE_EXACT",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_business_key-000",
+      "index": 110000,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-001",
+      "index": 110001,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-002",
+      "index": 110002,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_business_key-003",
+      "index": 110003,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-004",
+      "index": 110004,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-005",
+      "index": 110005,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_business_key-006",
+      "index": 110006,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-007",
+      "index": 110007,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-008",
+      "index": 110008,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_business_key-009",
+      "index": 110009,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-010",
+      "index": 110010,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-011",
+      "index": 110011,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_business_key-012",
+      "index": 110012,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-013",
+      "index": 110013,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-014",
+      "index": 110014,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_business_key-015",
+      "index": 110015,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-016",
+      "index": 110016,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_business_key-017",
+      "index": 110017,
+      "label": "DUPLICATE_BUSINESS_KEY",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-000",
+      "index": 111000,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-001",
+      "index": 111001,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-002",
+      "index": 111002,
+      "label": "HIGH_VALUE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-003",
+      "index": 111003,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-004",
+      "index": 111004,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-005",
+      "index": 111005,
+      "label": "HIGH_VALUE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-006",
+      "index": 111006,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-007",
+      "index": 111007,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-008",
+      "index": 111008,
+      "label": "HIGH_VALUE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-009",
+      "index": 111009,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-010",
+      "index": 111010,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-011",
+      "index": 111011,
+      "label": "HIGH_VALUE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-012",
+      "index": 111012,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-013",
+      "index": 111013,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-014",
+      "index": 111014,
+      "label": "HIGH_VALUE",
+      "template": "ledger",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-015",
+      "index": 111015,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-016",
+      "index": 111016,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-017",
+      "index": 111017,
+      "label": "HIGH_VALUE",
+      "template": "ledger",
+      "split": "held_out"
+    }
+  ]
+}

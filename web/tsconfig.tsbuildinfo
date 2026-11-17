@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/api.ts","./src/format.ts","./src/main.tsx","./src/components/ui.tsx","./src/pages/failedjobs.tsx","./src/pages/invoicedetail.tsx","./src/pages/invoicelist.tsx","./src/pages/metrics.tsx","./src/pages/upload.tsx","./vite.config.ts"],"version":"5.6.2"}

@@ -17,6 +17,7 @@ dependencies = [
     "celery[redis]>=5.4",
     "redis>=5.0",
     "anthropic>=1.0",
+    "groq>=1.7,<2",
     "reportlab>=4.2",
     "pypdf>=5.0",
     "python-multipart>=0.0.9",

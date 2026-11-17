@@ -8,9 +8,12 @@ from sqlalchemy.orm import Session
 from invoiceguard.db.models import LlmCall
 from invoiceguard.extraction.client import LlmUsage
 
-# USD per million tokens (input, output). Check current pricing before quoting costs;
-# Claude Haiku 5.5 is priced higher above 100K prompt tokens, which invoices stay under.
+# USD per million tokens (input, output), from each provider's published price list
+# (checked 2026-11-18; re-check before quoting costs). Claude Haiku 5.5 is priced higher
+# above 100K prompt tokens, which invoices stay under.
 PRICES_PER_MTOK: dict[str, tuple[Decimal, Decimal]] = {
+    "openai/gpt-oss-20b": (Decimal("0.075"), Decimal("0.30")),
+    "openai/gpt-oss-120b": (Decimal("0.15"), Decimal("0.60")),
     "claude-haiku-5-5": (Decimal("0.10"), Decimal("0.50")),
     "claude-sonnet-5-5": (Decimal("2.00"), Decimal("10.00")),
     "claude-opus-5-5": (Decimal("4.00"), Decimal("20.00")),

@@ -60,9 +60,13 @@ jobs:
         run: python -m invoiceguard.evaluation.runner --extractor noisy --gate
       - name: Recorded model runs, if any are committed
         run: |
+          # Folders are named <provider>__<model>, with '/' in the model written as '__'.
           for dir in ../eval/recordings/*/; do
             [ -d "$dir" ] || continue
-            python -m invoiceguard.evaluation.runner --extractor replay --model "$(basename "$dir")" --gate
+            name="$(basename "$dir")"
+            provider="${name%%__*}"
+            model="$(printf '%s' "${name#*__}" | sed 's#__#/#g')"
+            python -m invoiceguard.evaluation.runner --extractor replay --provider "$provider" --model "$model" --gate
           done
       - uses: actions/upload-artifact@v4
         if: always()

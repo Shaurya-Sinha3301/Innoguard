@@ -74,7 +74,9 @@ cd web && npm install && npm run dev
 
 Open http://localhost:5173 and sign in with the local development key `dev-key`. The demo
 runs in replay mode with simulated extractions, so it needs no API key. To extract with a
-real model, set `EXTRACTION_MODE=anthropic` and `ANTHROPIC_API_KEY` before starting.
+real model, set `EXTRACTION_MODE=live` and `GROQ_API_KEY` before starting (Groq,
+`openai/gpt-oss-20b` by default; set `EXTRACTION_PROVIDER=anthropic` with a Claude model
+and `ANTHROPIC_API_KEY` to use Claude instead).
 
 Health check: `curl http://localhost:8000/health`
 

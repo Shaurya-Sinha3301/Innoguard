@@ -36,7 +36,7 @@ use a Redis that is not billed per command, such as Render Key Value in the same
    - `API_KEYS`: reviewer keys as `key:name` pairs, for example
      `<a long random string>:demo-reviewer`. Generate the key yourself; never commit it.
    - `CORS_ORIGINS`: the Vercel URL from step 4 (you can set it after step 4).
-   - `ANTHROPIC_API_KEY`: leave empty for replay mode.
+   - `GROQ_API_KEY`: leave empty for replay mode.
 3. Deploy. The API runs `alembic upgrade head` on start-up.
 4. Check `https://<api>.onrender.com/health` returns `"status": "ok"`.
 
@@ -62,6 +62,7 @@ The hosted worker then processes them through the normal outbox and queue path.
 ## Operating the demo
 
 - Pause all writes: set `WRITES_ENABLED=false` on the API service.
-- Live extraction instead of replay: set `EXTRACTION_MODE=anthropic` and
-  `ANTHROPIC_API_KEY` on the worker, and put a spend limit on that API key first.
+- Live extraction instead of replay: set `EXTRACTION_MODE=live` and `GROQ_API_KEY` on the
+  worker (provider `groq`, model `openai/gpt-oss-20b` by default), and set a spending
+  limit on the Groq account first.
 - Runbook for queue backlogs, failed jobs and a bad posting: `docs/runbook.md`.

@@ -2,10 +2,12 @@
 
     python -m invoiceguard.evaluation.runner --extractor oracle --gate
     python -m invoiceguard.evaluation.runner --extractor noisy --noise-rate 0.4 --gate
-    python -m invoiceguard.evaluation.runner --extractor live --model claude-haiku-5-5
-    python -m invoiceguard.evaluation.runner --extractor replay --model claude-haiku-5-5
+    python -m invoiceguard.evaluation.runner --extractor live \
+        --provider groq --model openai/gpt-oss-20b
+    python -m invoiceguard.evaluation.runner --extractor replay \
+        --provider groq --model openai/gpt-oss-20b
 
-`live` calls the model and records every response under eval/recordings/<model>/;
+`live` calls the model and records every response under eval/recordings/<provider>__<model>/;
 `replay` re-scores those recordings without calling the model. Only live or replay runs
 measure a real model. Oracle and noisy runs test the controls, not extraction accuracy.
 """
@@ -37,6 +39,7 @@ from invoiceguard.generator.cases import CaseLabel, Scenario, generate_scenario
 from invoiceguard.generator.pdf import render_invoice_pdf
 
 REPO_EVAL = Path(__file__).resolve().parents[4] / "eval"
+REAL_PROVIDERS = {"groq", "anthropic"}  # simulated extractors use their own provider names
 HEADER_FIELDS = ("invoice_number", "vendor_id", "po_number", "currency", "subtotal", "tax", "total")
 _GOOD_AUTO = {"CLEAN", "PARTIAL_RECEIPT_BILLED_CORRECTLY"}
 
@@ -158,7 +161,7 @@ def compute_metrics(results: list[CaseResult]) -> dict[str, Any]:
     for name in (*HEADER_FIELDS, "lines"):
         fields[name] = _ratio(sum(r.fields_correct.get(name, False) for r in scored), len(scored))
 
-    usages = [r.usage for r in results if r.usage and r.usage.provider == "anthropic"]
+    usages = [r.usage for r in results if r.usage and r.usage.provider in REAL_PROVIDERS]
     latencies = sorted(float(u.latency_ms) for u in usages)
     costs = [cost_usd(u) for u in usages]
     tps = [float(t) for t in (tokens_per_second(u) for u in usages) if t is not None]
@@ -287,12 +290,19 @@ def run(cases: list[Case], extractor: Extractor) -> dict[str, Any]:
     }
 
 
-def build_extractor(kind: str, cases: list[Case], model: str, rate: float) -> Extractor:
-    recordings = REPO_EVAL / "recordings" / model
-    if kind == "live":
-        from invoiceguard.extraction.client import ClaudeExtractor
+def recordings_dir(provider: str, model: str) -> Path:
+    """One folder per provider and model; model ids may contain '/', so it is replaced."""
+    return REPO_EVAL / "recordings" / f"{provider}__{model.replace('/', '__')}"
 
-        return CachedExtractor(recordings, ClaudeExtractor(model))
+
+def build_extractor(
+    kind: str, cases: list[Case], model: str, rate: float, provider: str = "groq"
+) -> Extractor:
+    recordings = recordings_dir(provider, model)
+    if kind == "live":
+        from invoiceguard.jobs.extractor_factory import live_extractor
+
+        return CachedExtractor(recordings, live_extractor(provider, model))
     if kind == "replay":
         return CachedExtractor(recordings)
     truth: dict[str, tuple[Invoice, str]] = {}
@@ -348,7 +358,8 @@ def to_markdown(kind: str, report: dict[str, Any]) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Evaluate InvoiceGuard on the locked set")
     parser.add_argument("--extractor", choices=["oracle", "noisy", "replay", "live"], required=True)
-    parser.add_argument("--model", default="claude-haiku-5-5")
+    parser.add_argument("--provider", choices=["groq", "anthropic"], default="groq")
+    parser.add_argument("--model", default="openai/gpt-oss-20b")
     parser.add_argument("--noise-rate", type=float, default=0.4)
     parser.add_argument("--set", type=Path, default=REPO_EVAL / "locked" / "cases.json")
     parser.add_argument("--out", type=Path, default=REPO_EVAL / "reports")
@@ -356,13 +367,15 @@ def main() -> int:
     args = parser.parse_args()
 
     cases = load_locked(args.set)
-    extractor = build_extractor(args.extractor, cases, args.model, args.noise_rate)
+    extractor = build_extractor(
+        args.extractor, cases, args.model, args.noise_rate, provider=args.provider
+    )
     report = run(cases, extractor)
 
     name = (
         args.extractor
         if args.extractor in ("oracle", "noisy")
-        else f"{args.extractor}-{args.model}"
+        else f"{args.extractor}-{recordings_dir(args.provider, args.model).name}"
     )
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / f"{name}.json").write_text(json.dumps(report, indent=2), encoding="utf-8")

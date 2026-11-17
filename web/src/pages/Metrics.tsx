@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
 import { Empty, ErrorNote, Module, num, SkeletonRows, StatusBadge, Table, td, th } from "../components/ui";
-import { percent } from "../format";
+import { isSimulated, percent } from "../format";
 import { reasonInfo } from "../reasons";
 
 export default function Metrics() {
@@ -99,7 +99,7 @@ export default function Metrics() {
                 <tr key={`${row.provider}-${row.model}`}>
                   <td className={td}>
                     {row.model}
-                    {row.provider !== "anthropic" && <span className="ml-1.5 text-xs font-semibold text-amber">simulated</span>}
+                    {isSimulated(row.provider) && <span className="ml-1.5 text-xs font-semibold text-amber">simulated</span>}
                   </td>
                   <td className={`${td} ${num}`}>{row.calls}</td>
                   <td className={`${td} ${num}`}>{Number(row.cost_per_request_usd).toFixed(6)}</td>

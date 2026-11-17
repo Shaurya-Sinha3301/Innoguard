@@ -12,7 +12,7 @@ Prompts and thresholds must not be tuned on it.
 | --- | --- | --- |
 | `oracle` | Whether the decision rules reach the right outcome when extraction is perfect | No |
 | `noisy` | Whether the controls catch simulated extraction errors (wrong digits, dropped lines, invented evidence, low confidence) | No |
-| `live` | A real model on the locked set; every response is recorded under `recordings/<model>/` | Yes |
+| `live` | A real model on the locked set; every response is recorded under `recordings/<provider>__<model>/` | Yes |
 | `replay` | Re-scores recorded responses, so the numbers are reproducible and free | No |
 
 Only `live` and `replay` measure a real model. Oracle and noisy results test the controls
@@ -22,12 +22,12 @@ and say nothing about a model's accuracy.
 cd backend
 python -m invoiceguard.evaluation.runner --extractor oracle --gate
 python -m invoiceguard.evaluation.runner --extractor noisy --gate
-ANTHROPIC_API_KEY=... python -m invoiceguard.evaluation.runner --extractor live --model claude-haiku-5-5
-python -m invoiceguard.evaluation.runner --extractor replay --model claude-haiku-5-5 --gate
+GROQ_API_KEY=... python -m invoiceguard.evaluation.runner --extractor live --provider groq --model openai/gpt-oss-20b
+python -m invoiceguard.evaluation.runner --extractor replay --provider groq --model openai/gpt-oss-20b --gate
 ```
 
 A live run over 216 PDFs makes 216 model calls; check current pricing before running it.
-Commit `recordings/<model>/` afterwards, and CI will re-score it on every change.
+Commit `recordings/<provider>__<model>/` afterwards, and CI will re-score it on every change.
 
 ## Metrics and their denominators
 

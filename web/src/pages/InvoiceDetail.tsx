@@ -17,7 +17,7 @@ import {
   td,
   th,
 } from "../components/ui";
-import { clock, humanize, money, qty, when } from "../format";
+import { clock, humanize, isSimulated, money, qty, when } from "../format";
 import { reasonInfo } from "../reasons";
 
 const PRICE_TOLERANCE = 0.02;
@@ -396,7 +396,7 @@ export default function InvoiceDetailPage() {
                   <li key={i} className="flex flex-wrap justify-between gap-x-3 px-3 py-1.5 text-sm">
                     <span>
                       {c.model}
-                      {c.provider !== "anthropic" && <span className="ml-1 text-xs font-semibold text-amber">simulated</span>}
+                      {isSimulated(c.provider) && <span className="ml-1 text-xs font-semibold text-amber">simulated</span>}
                     </span>
                     <span className="font-mono text-[13px] text-ink-2">
                       {c.input_tokens}/{c.output_tokens} tok · {c.latency_ms} ms · ${Number(c.cost_usd).toFixed(4)}

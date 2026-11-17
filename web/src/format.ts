@@ -33,6 +33,13 @@ export function age(iso: string, now = Date.now()): string {
   return `${Math.round(hours / 24)} d`;
 }
 
+/** Simulated extractors record their own provider names, never a real provider's. */
+const SIMULATED_PROVIDERS = new Set(["fake", "simulated-noise"]);
+
+export function isSimulated(provider: string): boolean {
+  return SIMULATED_PROVIDERS.has(provider);
+}
+
 export function humanize(code: string): string {
   return code.replace(/[_.:]+/g, " ").toLowerCase();
 }

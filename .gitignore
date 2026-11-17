@@ -13,6 +13,9 @@ dist/
 .env.*
 !.env.example
 
+# Local runtime cache of model responses (evaluation recordings live under eval/).
+extraction-cache/
+
 node_modules/
 web/dist/
 

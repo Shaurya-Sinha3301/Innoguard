@@ -38,7 +38,10 @@ def format_indian(value: Decimal) -> str:
 
 
 def _qty(value: Decimal) -> str:
-    return str(value.normalize()) if value == value.to_integral() else str(value)
+    # Not Decimal.normalize(): it prints 10 as "1E+1".
+    if value == value.to_integral():
+        return str(int(value))
+    return format(value.normalize(), "f")
 
 
 @dataclass(frozen=True)

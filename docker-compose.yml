@@ -7,8 +7,15 @@ x-backend: &backend
     REDIS_URL: redis://redis:6379/0
     # Local development only. Real deployments set their own keys as secrets.
     API_KEYS: dev-key:dev-reviewer
+    # "replay" uses recorded extractions only and never calls the model. Set
+    # EXTRACTION_MODE=anthropic and ANTHROPIC_API_KEY in your shell for live extraction.
+    EXTRACTION_MODE: ${EXTRACTION_MODE:-replay}
+    EXTRACTION_MODEL: ${EXTRACTION_MODEL:-claude-haiku-5-5}
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   volumes:
     - ./backend/src:/app/backend/src
+    - ./backend/alembic:/app/backend/alembic
+    - ./extraction-cache:/app/extraction-cache
 
 services:
   postgres:
@@ -58,7 +65,16 @@ services:
 
   worker:
     <<: *backend
-    command: ["celery", "-A", "invoiceguard.jobs.celery_app", "worker", "--loglevel=info"]
+    command: ["celery", "-A", "invoiceguard.jobs.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  dispatcher:
+    <<: *backend
+    command: ["python", "-m", "invoiceguard.jobs.dispatcher"]
     depends_on:
       migrate:
         condition: service_completed_successfully

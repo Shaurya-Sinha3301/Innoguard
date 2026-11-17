@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # "anthropic" for live calls, "replay" to use recorded responses only.
     extraction_mode: str = "anthropic"
     extraction_cache_dir: str = "/app/extraction-cache"
+    extraction_max_attempts: int = 4
 
 
 settings = Settings()

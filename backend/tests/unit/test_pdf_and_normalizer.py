@@ -14,7 +14,7 @@ from invoiceguard.extraction.normalizer import (
 )
 from invoiceguard.extraction.schema import ExtractedValue
 from invoiceguard.generator.cases import CaseLabel, generate_scenario
-from invoiceguard.generator.pdf import TEMPLATES, format_indian, render_invoice_pdf
+from invoiceguard.generator.pdf import TEMPLATES, _qty, format_indian, render_invoice_pdf
 
 D = Decimal
 
@@ -29,6 +29,15 @@ def clean_invoice(index=1):
 )
 def test_indian_grouping(value, expected):
     assert format_indian(D(value)) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [("10", "10"), ("20.00", "20"), ("100", "100"), ("2.50", "2.5"), ("7", "7")],
+)
+def test_quantities_print_without_scientific_notation(value, expected):
+    # Regression: Decimal("10").normalize() prints as "1E+1".
+    assert _qty(D(value)) == expected
 
 
 @pytest.mark.parametrize(

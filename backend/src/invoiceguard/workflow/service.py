@@ -29,8 +29,13 @@ _EDITABLE_STATES = frozenset({S.NEEDS_REVIEW, S.APPROVED, S.AUTO_APPROVED})
 
 def lock_invoice(session: Session, invoice_id: uuid.UUID) -> m.Invoice:
     """Load an invoice and hold a row lock until the transaction ends."""
+    # populate_existing: always read the locked row from the database, never a stale copy
+    # this session may already hold in memory.
     row = session.execute(
-        select(m.Invoice).where(m.Invoice.id == invoice_id).with_for_update()
+        select(m.Invoice)
+        .where(m.Invoice.id == invoice_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     ).scalar_one_or_none()
     if row is None:
         raise InvoiceNotFound(str(invoice_id))

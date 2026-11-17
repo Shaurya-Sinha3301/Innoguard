@@ -36,12 +36,13 @@ class EditIn(DecisionIn):
 class InvoiceOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    # Header fields are null for an uploaded document until extraction completes.
     id: uuid.UUID
-    invoice_number: str
-    vendor_id: str
+    invoice_number: str | None
+    vendor_id: str | None
     po_number: str | None
-    currency: str
-    total: Decimal
+    currency: str | None
+    total: Decimal | None
     status: str
     version: int
     created_at: datetime
@@ -79,11 +80,33 @@ class AuditOut(BaseModel):
 
 
 class InvoiceDetail(InvoiceOut):
-    subtotal: Decimal
-    tax: Decimal
+    subtotal: Decimal | None
+    tax: Decimal | None
     lines: list[LineOut]
     approvals: list[ApprovalOut]
     timeline: list[AuditOut]
+
+
+class ExtractionFieldOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    field: str
+    value: str | None
+    confidence: Decimal
+    page: int | None
+    snippet: str | None
+
+
+class FailedJobOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    invoice_id: uuid.UUID | None
+    task: str
+    error: str
+    attempts: int
+    status: str
+    created_at: datetime
 
 
 class PostOut(BaseModel):

@@ -148,6 +148,40 @@ def test_invalid_payload_is_a_422(client):
     assert client.post("/invoices", json={"invoice_number": "x"}, headers=ASHA).status_code == 422
 
 
+def test_document_upload_queues_extraction(client, session_factory):
+    from invoiceguard.db import models as m
+    from invoiceguard.generator.pdf import render_invoice_pdf
+
+    scenario = generate_scenario(random.Random(20), 20, CaseLabel.CLEAN)
+    pdf = render_invoice_pdf(scenario.invoice, "compact")
+    resp = client.post(
+        "/documents", files={"file": ("inv.pdf", pdf, "application/pdf")}, headers=ASHA
+    )
+    assert resp.status_code == 202
+    body = resp.json()
+    assert (body["status"], body["total"]) == ("RECEIVED", None)
+
+    doc = client.get(f"/invoices/{body['id']}/document", headers=ASHA)
+    assert doc.status_code == 200
+    assert doc.content == pdf
+    with session_factory() as session:
+        assert session.query(m.OutboxMessage).count() == 1
+
+
+def test_non_pdf_upload_is_a_422(client):
+    resp = client.post(
+        "/documents", files={"file": ("x.txt", b"hello", "text/plain")}, headers=ASHA
+    )
+    assert resp.status_code == 422
+
+
+def test_replay_of_a_healthy_invoice_is_a_409(client, session_factory):
+    body = payload_for(session_factory, CaseLabel.CLEAN, 21)
+    invoice = client.post("/invoices", json=body, headers=ASHA).json()
+    assert client.post(f"/invoices/{invoice['id']}/replay", headers=ASHA).status_code == 409
+    assert client.get("/failed-jobs", headers=ASHA).json() == []
+
+
 def test_json_numbers_keep_decimal_precision():
     raw = (
         '{"invoice_number":"A","vendor_id":"V1","currency":"INR",'

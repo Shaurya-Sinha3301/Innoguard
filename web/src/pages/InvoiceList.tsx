@@ -2,78 +2,75 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-import { Card, CardHeader, Empty, ErrorNote, StatusBadge, td, th } from "../components/ui";
+import { Empty, ErrorNote, Module, num, Row, Segmented, SkeletonRows, StatusBadge, Table, td, th } from "../components/ui";
 import { money, when } from "../format";
+import { primaryReasons, reasonInfo } from "../reasons";
 
-const STATUSES = ["", "NEEDS_REVIEW", "AUTO_APPROVED", "APPROVED", "POSTED", "REJECTED", "FAILED", "RECEIVED", "EXTRACTING"];
+const FILTERS = [
+  { value: "", label: "All" },
+  { value: "NEEDS_REVIEW", label: "Needs review" },
+  { value: "AUTO_APPROVED", label: "Auto-approved" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "POSTED", label: "Posted" },
+  { value: "REJECTED", label: "Rejected" },
+  { value: "FAILED", label: "Failed" },
+];
 
-export default function InvoiceList({ status, title }: { status?: string; title: string }) {
-  const [filter, setFilter] = useState(status ?? "");
+export default function InvoiceList() {
+  const [status, setStatus] = useState("");
   const query = useQuery({
-    queryKey: ["invoices", filter],
-    queryFn: () => api.listInvoices(filter || undefined),
+    queryKey: ["invoices", status],
+    queryFn: () => api.listInvoices(status || undefined),
     refetchInterval: 5000,
   });
 
   return (
-    <Card>
-      <CardHeader
-        title={title}
-        action={
-          status === undefined && (
-            <select
-              aria-label="Filter by status"
-              className="h-8 rounded border border-border bg-background px-2 text-sm"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s ? s.replace(/_/g, " ").toLowerCase() : "all statuses"}
-                </option>
-              ))}
-            </select>
-          )
-        }
-      />
+    <Module title="All invoices" count={query.data?.length}>
+      <div className="border-b border-line px-3 py-2">
+        <Segmented label="Filter by status" value={status} onChange={setStatus} options={FILTERS} />
+      </div>
       <ErrorNote error={query.error} />
-      {query.data && query.data.length === 0 && (
-        <Empty>{status === "NEEDS_REVIEW" ? "Nothing waiting for review." : "No invoices yet."}</Empty>
-      )}
+      {query.isLoading && <SkeletonRows rows={12} cols={6} />}
+      {query.data?.length === 0 && <Empty title="No invoices match">Try another status, or upload a document.</Empty>}
       {query.data && query.data.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="border-b border-border">
-              <tr>
-                <th className={th}>Invoice</th>
-                <th className={th}>Vendor</th>
-                <th className={th}>PO</th>
-                <th className={`${th} text-right`}>Total</th>
-                <th className={th}>Status</th>
-                <th className={th}>Received</th>
-              </tr>
-            </thead>
-            <tbody>
-              {query.data.map((inv) => (
-                <tr key={inv.id} className="border-b border-border last:border-0 hover:bg-muted/50">
+        <Table label="Invoices, newest first">
+          <thead>
+            <tr>
+              <th className={th}>Invoice</th>
+              <th className={th}>Vendor</th>
+              <th className={th}>PO</th>
+              <th className={th}>Status</th>
+              <th className={th}>Last decision reason</th>
+              <th className={`${th} text-right`}>Total</th>
+              <th className={th}>Received</th>
+            </tr>
+          </thead>
+          <tbody>
+            {query.data.map((inv) => {
+              const reasons = primaryReasons(inv.reasons ?? []);
+              return (
+                <Row key={inv.id}>
                   <td className={td}>
-                    <Link className="font-medium text-primary hover:underline" to={`/invoices/${inv.id}`}>
-                      {inv.invoice_number ?? "(not yet read)"}
+                    <Link to={`/invoices/${inv.id}`} className="font-mono text-[13px] font-semibold underline decoration-line underline-offset-4 hover:decoration-red">
+                      {inv.invoice_number ?? "Unread document"}
                     </Link>
                   </td>
-                  <td className={td}>{inv.vendor_id ?? "—"}</td>
-                  <td className={td}>{inv.po_number ?? "—"}</td>
-                  <td className={`${td} text-right tabular-nums`}>{money(inv.total, inv.currency)}</td>
+                  <td className={`${td} font-mono text-[13px]`}>{inv.vendor_id ?? "—"}</td>
+                  <td className={`${td} font-mono text-[13px] text-ink-2`}>{inv.po_number ?? "—"}</td>
                   <td className={td}>
                     <StatusBadge status={inv.status} />
                   </td>
-                  <td className={`${td} text-muted-foreground`}>{when(inv.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  <td className={`${td} text-ink-2`}>{reasons.length ? reasons.map((r) => reasonInfo(r).label).join(", ") : "—"}</td>
+                  <td className={`${td} ${num}`}>
+                    <span className="text-ink-3">{inv.currency}</span> {money(inv.total)}
+                  </td>
+                  <td className={`${td} text-ink-2`}>{when(inv.created_at)}</td>
+                </Row>
+              );
+            })}
+          </tbody>
+        </Table>
       )}
-    </Card>
+    </Module>
   );
 }

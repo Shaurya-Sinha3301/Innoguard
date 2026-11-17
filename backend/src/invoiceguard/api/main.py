@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from invoiceguard.api import health
+from invoiceguard.api.auth import current_user
 from invoiceguard.api.routers import documents, invoices, metrics
 from invoiceguard.config import settings
 
@@ -16,6 +17,12 @@ app.add_middleware(
 app.include_router(invoices.router)
 app.include_router(documents.router)
 app.include_router(metrics.router)
+
+
+@app.get("/me")
+def who_am_i(user: str = Depends(current_user)) -> dict[str, str]:
+    """The reviewer name the current API key signs actions as."""
+    return {"name": user}
 
 
 @app.get("/health")

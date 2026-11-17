@@ -1,47 +1,69 @@
+@import "@fontsource/barlow/400.css";
+@import "@fontsource/barlow/500.css";
+@import "@fontsource/barlow/600.css";
+@import "@fontsource/barlow/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/600.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens: the only place colours, radius and surfaces are defined. */
+/* Design tokens: every colour in the UI comes from here.
+   Light only: reviewers work in office daylight. Red is the one utility colour and does
+   one job: it marks what needs a human (exceptions, open counts, the active route). */
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
-  --muted: 220 14% 96%;
-  --muted-foreground: 220 9% 40%;
-  --border: 220 13% 88%;
-  --ring: 221 83% 53%;
-  --primary: 221 83% 45%;
-  --primary-foreground: 0 0% 100%;
-  --success: 142 64% 30%;
-  --success-foreground: 0 0% 100%;
-  --warning: 35 92% 38%;
-  --warning-foreground: 0 0% 100%;
-  --danger: 0 72% 45%;
-  --danger-foreground: 0 0% 100%;
-  --radius: 6px;
+  --bg: 0 0% 100%;
+  --ink: 216 12% 8%;
+  --ink-2: 220 13% 33%;
+  --ink-3: 220 9% 44%;
+  --line: 216 14% 87%;
+  --fill: 220 14% 96%;
+  --fill-2: 210 17% 98%;
+  --red: 350 85% 42%;
+  --red-tint: 352 82% 96%;
+  --green: 141 65% 29%;
+  --green-tint: 140 45% 94%;
+  --amber: 36 100% 27%;
+  --amber-tint: 38 85% 94%;
+  --radius: 3px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: 222 30% 9%;
-    --foreground: 210 20% 94%;
-    --card: 222 28% 12%;
-    --muted: 222 20% 17%;
-    --muted-foreground: 215 15% 65%;
-    --border: 222 18% 24%;
-    --ring: 217 91% 60%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --success: 142 55% 45%;
-    --success-foreground: 222 47% 11%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 222 47% 11%;
-    --danger: 0 80% 62%;
-    --danger-foreground: 222 47% 11%;
-  }
+html {
+  font-size: 14px;
 }
 
 body {
-  @apply bg-background text-foreground antialiased;
+  @apply bg-bg text-ink antialiased;
+  font-family: "Barlow", system-ui, sans-serif;
+  font-feature-settings: "tnum" 1;
+  caret-color: hsl(var(--red));
+}
+
+::selection {
+  background: hsl(var(--red-tint));
+  color: hsl(var(--ink));
+}
+
+:focus-visible {
+  outline: 2px solid hsl(var(--ink));
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--line)) transparent;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
 }

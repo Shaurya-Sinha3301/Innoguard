@@ -48,6 +48,23 @@ class InvoiceOut(BaseModel):
     created_at: datetime
 
 
+class InvoiceRow(InvoiceOut):
+    reasons: list[str] = []
+
+
+class PoLineOut(BaseModel):
+    sku: str
+    qty: Decimal
+    unit_price: Decimal
+
+
+class PurchaseOrderOut(BaseModel):
+    po_number: str
+    vendor_id: str
+    currency: str
+    lines: list[PoLineOut]
+
+
 class LineOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -96,6 +113,10 @@ class InvoiceDetail(InvoiceOut):
     subtotal: Decimal | None
     tax: Decimal | None
     trace_id: str | None
+    reasons: list[str]
+    purchase_order: PurchaseOrderOut | None
+    receipt_count: int
+    received: dict[str, Decimal]
     lines: list[LineOut]
     approvals: list[ApprovalOut]
     timeline: list[AuditOut]

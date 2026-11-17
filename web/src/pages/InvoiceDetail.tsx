@@ -1,17 +1,258 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, ArrowLeft, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, type AuditEvent, type InvoiceDetail } from "../api";
-import { Button, Card, CardHeader, Empty, ErrorNote, Input, StatusBadge, td, th } from "../components/ui";
-import { humanize, money, when } from "../format";
+import {
+  Button,
+  cx,
+  Empty,
+  ErrorNote,
+  Module,
+  num,
+  ReasonTag,
+  SkeletonRows,
+  StatusBadge,
+  Table,
+  td,
+  th,
+} from "../components/ui";
+import { clock, humanize, money, qty, when } from "../format";
+import { reasonInfo } from "../reasons";
 
-function latestReasons(timeline: AuditEvent[]): string[] {
-  for (const event of [...timeline].reverse()) {
-    const reasons = event.payload.reasons;
-    if (Array.isArray(reasons) && reasons.length) return reasons as string[];
-  }
-  return [];
+const PRICE_TOLERANCE = 0.02;
+const LOW_CONFIDENCE = 0.9;
+
+/* ---------- Three-way match: invoice line vs PO line vs goods received ---------- */
+
+function ThreeWayMatch({ inv }: { inv: InvoiceDetail }) {
+  const po = inv.purchase_order;
+  const flag = "bg-red-tint font-semibold text-red";
+  if (!inv.lines.length) return <Empty title="No lines yet">The document has not been read yet.</Empty>;
+  return (
+    <>
+      {!po && inv.po_number && (
+        <p className="flex items-center gap-2 border-b border-line bg-red-tint px-3 py-1.5 text-sm text-red">
+          <AlertTriangle aria-hidden className="h-4 w-4" />
+          No purchase order on file for <span className="font-mono">{inv.po_number}</span>.
+        </p>
+      )}
+      <Table label="Invoice lines against purchase order and goods received">
+        <thead>
+          <tr>
+            <th className={th}>Item</th>
+            <th className={`${th} text-right`}>Invoiced qty</th>
+            <th className={`${th} text-right`}>Received</th>
+            <th className={`${th} text-right`}>Ordered</th>
+            <th className={`${th} text-right`}>Invoice price</th>
+            <th className={`${th} text-right`}>PO price</th>
+            <th className={`${th} text-right`}>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {inv.lines.map((line) => {
+            const poLine = po?.lines.find((p) => p.sku === line.sku);
+            const invoiced = Number(line.qty);
+            const price = Number(line.unit_price);
+            const received = inv.receipt_count ? Number(inv.received[line.sku] ?? 0) : null;
+            const overReceived = received !== null && invoiced > received;
+            const overOrdered = poLine ? invoiced > Number(poLine.qty) : false;
+            const priceOff = poLine
+              ? Math.abs(price - Number(poLine.unit_price)) > Number(poLine.unit_price) * PRICE_TOLERANCE
+              : false;
+            return (
+              <tr key={line.line_no}>
+                <td className={cx(td, "font-mono text-[13px]", po && !poLine && flag)}>
+                  {line.sku}
+                  {po && !poLine && <span className="ml-1 font-sans text-xs">not on PO</span>}
+                </td>
+                <td className={cx(td, num, (overReceived || overOrdered) && flag)}>{qty(line.qty)}</td>
+                <td className={cx(td, num, overReceived && flag)}>
+                  {received === null ? <span className="text-red">none</span> : qty(received)}
+                </td>
+                <td className={cx(td, num, overOrdered && flag)}>{poLine ? qty(poLine.qty) : "—"}</td>
+                <td className={cx(td, num, priceOff && flag)}>{money(line.unit_price)}</td>
+                <td className={cx(td, num, priceOff && flag)}>{poLine ? money(poLine.unit_price) : "—"}</td>
+                <td className={cx(td, num)}>{money(String(invoiced * price))}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot className="text-sm">
+          {(
+            [
+              ["Subtotal", inv.subtotal],
+              ["Tax", inv.tax],
+              ["Total", inv.total],
+            ] as const
+          ).map(([label, value]) => (
+            <tr key={label}>
+              <td colSpan={6} className={cx(td, "text-right", label === "Total" ? "font-semibold" : "text-ink-2")}>
+                {label}
+              </td>
+              <td className={cx(td, num, label === "Total" && "font-semibold")}>{money(value)}</td>
+            </tr>
+          ))}
+        </tfoot>
+      </Table>
+      <p className="px-3 py-1.5 text-xs text-ink-2">
+        Highlighted cells disagree. Price tolerance 2%; quantities must match exactly. Received sums {inv.receipt_count}{" "}
+        goods receipt{inv.receipt_count === 1 ? "" : "s"} on {po?.po_number ?? inv.po_number ?? "the PO"}.
+      </p>
+    </>
+  );
 }
+
+/* ---------- Extracted values with their evidence ---------- */
+
+function Evidence({ id }: { id: string }) {
+  const fields = useQuery({ queryKey: ["extraction", id], queryFn: () => api.extraction(id) });
+  if (fields.isLoading) return <SkeletonRows rows={5} cols={3} />;
+  if (!fields.data?.length) return <Empty title="Submitted as data">This invoice arrived as structured data, so nothing was read from a document.</Empty>;
+  return (
+    <Table label="Extracted values and the text they came from">
+      <thead>
+        <tr>
+          <th className={th}>Field</th>
+          <th className={th}>Value</th>
+          <th className={`${th} text-right`}>Confidence</th>
+          <th className={th}>Quoted from the PDF</th>
+        </tr>
+      </thead>
+      <tbody>
+        {fields.data.map((f) => {
+          const low = Number(f.confidence) < LOW_CONFIDENCE;
+          return (
+            <tr key={f.field}>
+              <td className={cx(td, "text-ink-2")}>{humanize(f.field)}</td>
+              <td className={cx(td, "font-mono text-[13px]")}>{f.value ?? "—"}</td>
+              <td className={cx(td, num, low && "bg-red-tint font-semibold text-red")}>
+                {low && <span className="sr-only">Low confidence: </span>}
+                {Number(f.confidence).toFixed(2)}
+              </td>
+              <td className={cx(td, "max-w-[18rem] truncate text-ink-2")} title={f.snippet ?? undefined}>
+                {f.snippet ? (
+                  <>
+                    <span className="text-ink-3">p.{f.page ?? "?"}</span> “{f.snippet}”
+                  </>
+                ) : (
+                  <span className="text-red">no evidence</span>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </Table>
+  );
+}
+
+/* ---------- The decision ---------- */
+
+function Decision({ inv }: { inv: InvoiceDetail }) {
+  const queryClient = useQueryClient();
+  const [reason, setReason] = useState("");
+  const [total, setTotal] = useState("");
+  const done = () => {
+    setReason("");
+    setTotal("");
+    void queryClient.invalidateQueries();
+  };
+  const approve = useMutation({ mutationFn: () => api.approve(inv.id, inv.version, reason.trim()), onSuccess: done });
+  const reject = useMutation({ mutationFn: () => api.reject(inv.id, inv.version, reason.trim()), onSuccess: done });
+  const edit = useMutation({ mutationFn: () => api.edit(inv.id, inv.version, reason.trim(), { total }), onSuccess: done });
+  const post = useMutation({ mutationFn: () => api.post(inv.id), onSuccess: done });
+  const replay = useMutation({ mutationFn: () => api.replay(inv.id), onSuccess: done });
+  const error = approve.error ?? reject.error ?? edit.error ?? post.error ?? replay.error;
+  const busy = approve.isPending || reject.isPending || edit.isPending || post.isPending || replay.isPending;
+
+  const reviewable = inv.status === "NEEDS_REVIEW";
+  const postable = inv.status === "APPROVED" || inv.status === "AUTO_APPROVED";
+  const editable = reviewable || postable;
+  const hasReason = reason.trim().length > 0;
+  const validTotal = /^\d+(\.\d{1,4})?$/.test(total);
+
+  return (
+    <div className="space-y-3 p-3">
+      <ErrorNote error={error} />
+      {editable && (
+        <div className="space-y-1">
+          <label htmlFor="reason" className="text-sm font-semibold">
+            Reason <span className="font-normal text-ink-2">(required, saved to the audit trail)</span>
+          </label>
+          <textarea
+            id="reason"
+            rows={3}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="For example: price increase agreed with the supplier on 12 Nov"
+            className="w-full resize-y rounded border border-line px-2.5 py-1.5 text-sm placeholder:text-ink-3"
+          />
+        </div>
+      )}
+      {reviewable && (
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={!hasReason || busy} onClick={() => approve.mutate()}>
+            Approve version {inv.version}
+          </Button>
+          <Button variant="danger" disabled={!hasReason || busy} onClick={() => reject.mutate()}>
+            Reject
+          </Button>
+        </div>
+      )}
+      {postable && (
+        <div className="space-y-1">
+          <Button disabled={busy} onClick={() => post.mutate()}>
+            Post to system of record
+          </Button>
+          <p className="text-xs text-ink-2">Posting is idempotent: a second attempt is recorded and does nothing.</p>
+        </div>
+      )}
+      {post.data && (
+        <p className="text-sm">
+          {post.data.outcome === "POSTED" ? "Posted." : "Already posted; nothing changed."}{" "}
+          <span className="font-mono text-xs text-ink-2">key {post.data.idempotency_key.slice(0, 12)}</span>
+        </p>
+      )}
+      {inv.status === "FAILED" && (
+        <div className="space-y-1">
+          <Button disabled={busy} onClick={() => replay.mutate()}>
+            Replay extraction
+          </Button>
+          <p className="text-xs text-ink-2">Sends the document back through extraction. Safe to repeat.</p>
+        </div>
+      )}
+      {editable && (
+        <details className="border-t border-line pt-2">
+          <summary className="cursor-pointer text-sm font-semibold">Correct the total</summary>
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <label className="text-sm" htmlFor="total">
+              New total
+              <input
+                id="total"
+                inputMode="decimal"
+                value={total}
+                onChange={(e) => setTotal(e.target.value)}
+                className="mt-1 block h-8 w-36 rounded border border-line px-2 font-mono text-sm"
+              />
+            </label>
+            <Button variant="secondary" disabled={!hasReason || !validTotal || busy} onClick={() => edit.mutate()}>
+              Save as version {inv.version + 1}
+            </Button>
+          </div>
+          <p className="mt-1 text-xs text-ink-2">An edit creates a new version and voids every approval of this one.</p>
+        </details>
+      )}
+      {!editable && inv.status !== "FAILED" && (
+        <p className="text-sm text-ink-2">
+          {inv.status === "POSTED" ? "Posted. No further action." : inv.status === "REJECTED" ? "Rejected. No further action." : "Being processed."}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Supporting modules ---------- */
 
 function DocumentPreview({ id }: { id: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -22,299 +263,151 @@ function DocumentPreview({ id }: { id: string }) {
     setUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
   }, [doc.data]);
-
-  if (doc.isError) return <Empty>No document: this invoice was submitted as structured data.</Empty>;
-  if (!url) return <Empty>Loading document…</Empty>;
+  if (doc.isError) return <Empty title="No document">This invoice was submitted as structured data.</Empty>;
+  if (!url) return <SkeletonRows rows={6} cols={1} />;
   return (
     <div>
-      <iframe title="Invoice document" src={url} className="h-[640px] w-full" />
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="block border-t border-border px-4 py-2 text-sm text-primary hover:underline"
-      >
-        Open PDF in a new tab
+      <iframe title="Invoice PDF" src={url} className="h-[560px] w-full" />
+      <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-1 border-t border-line px-3 py-1.5 text-sm hover:underline">
+        <ExternalLink aria-hidden className="h-3.5 w-3.5" /> Open the PDF in a new tab
       </a>
     </div>
   );
 }
 
-function Actions({ invoice }: { invoice: InvoiceDetail }) {
-  const queryClient = useQueryClient();
-  const [reason, setReason] = useState("");
-  const [total, setTotal] = useState("");
-  const done = () => {
-    setReason("");
-    setTotal("");
-    queryClient.invalidateQueries();
-  };
-  const approve = useMutation({ mutationFn: () => api.approve(invoice.id, invoice.version, reason), onSuccess: done });
-  const reject = useMutation({ mutationFn: () => api.reject(invoice.id, invoice.version, reason), onSuccess: done });
-  const edit = useMutation({
-    mutationFn: () => api.edit(invoice.id, invoice.version, reason, { total }),
-    onSuccess: done,
-  });
-  const post = useMutation({ mutationFn: () => api.post(invoice.id), onSuccess: done });
-  const replay = useMutation({ mutationFn: () => api.replay(invoice.id), onSuccess: done });
-  const error = approve.error ?? reject.error ?? edit.error ?? post.error ?? replay.error;
+function describe(e: AuditEvent): string {
+  if (e.event_type === "invoice.state_changed") {
+    return `${humanize(String(e.payload.from))} → ${humanize(String(e.payload.to))}`;
+  }
+  return humanize(e.event_type);
+}
 
-  const reviewable = invoice.status === "NEEDS_REVIEW";
-  const postable = invoice.status === "APPROVED" || invoice.status === "AUTO_APPROVED";
-  const editable = reviewable || postable;
-
+function AuditTrail({ inv }: { inv: InvoiceDetail }) {
   return (
-    <Card>
-      <CardHeader title="Decision" />
-      <div className="space-y-3 p-4">
-        <ErrorNote error={error} />
-        {editable && (
-          <Input
-            aria-label="Reason"
-            placeholder="Reason (required, recorded in the audit log)"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-        )}
-        <div className="flex flex-wrap gap-2">
-          {reviewable && (
-            <>
-              <Button disabled={!reason.trim() || approve.isPending} onClick={() => approve.mutate()}>
-                Approve version {invoice.version}
-              </Button>
-              <Button variant="danger" disabled={!reason.trim() || reject.isPending} onClick={() => reject.mutate()}>
-                Reject
-              </Button>
-            </>
-          )}
-          {postable && (
-            <Button disabled={post.isPending} onClick={() => post.mutate()}>
-              Post to system of record
-            </Button>
-          )}
-          {invoice.status === "FAILED" && (
-            <Button disabled={replay.isPending} onClick={() => replay.mutate()}>
-              Replay extraction
-            </Button>
-          )}
-        </div>
-        {post.data && (
-          <p className="text-sm text-muted-foreground">
-            Result: {humanize(post.data.outcome)} (key {post.data.idempotency_key.slice(0, 12)}…)
-          </p>
-        )}
-        {editable && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
-            <Input
-              aria-label="Corrected total"
-              className="w-40"
-              inputMode="decimal"
-              placeholder="Corrected total"
-              value={total}
-              onChange={(e) => setTotal(e.target.value)}
-            />
-            <Button
-              variant="secondary"
-              disabled={!reason.trim() || !/^\d+(\.\d{1,4})?$/.test(total) || edit.isPending}
-              onClick={() => edit.mutate()}
-            >
-              Save edit
-            </Button>
-            <span className="text-xs text-muted-foreground">An edit creates a new version and voids any approval.</span>
-          </div>
-        )}
-        {!editable && invoice.status !== "FAILED" && (
-          <p className="text-sm text-muted-foreground">No action available in this state.</p>
-        )}
-      </div>
-    </Card>
+    <Table label="Audit trail">
+      <thead>
+        <tr>
+          <th className={th}>Time</th>
+          <th className={th}>Event</th>
+          <th className={th}>By</th>
+          <th className={th}>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {inv.timeline.map((e) => (
+          <tr key={e.id}>
+            <td className={cx(td, "font-mono text-[13px] text-ink-2")} title={when(e.created_at)}>
+              {clock(e.created_at)}
+            </td>
+            <td className={td}>{describe(e)}</td>
+            <td className={cx(td, "text-ink-2")}>{e.actor}</td>
+            <td className={cx(td, "max-w-[22rem] truncate text-ink-2")}>
+              {typeof e.payload.reason === "string" ? `“${e.payload.reason}”` : ""}
+              {Array.isArray(e.payload.reasons) && (e.payload.reasons as string[]).map((r) => reasonInfo(r).label).join(", ")}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
   );
 }
 
 export default function InvoiceDetailPage() {
   const { id = "" } = useParams();
   const invoice = useQuery({ queryKey: ["invoice", id], queryFn: () => api.invoice(id), refetchInterval: 4000 });
-  const fields = useQuery({ queryKey: ["extraction", id], queryFn: () => api.extraction(id) });
 
   if (invoice.error) return <ErrorNote error={invoice.error} />;
-  if (!invoice.data) return <Empty>Loading…</Empty>;
+  if (!invoice.data) return <SkeletonRows rows={12} cols={4} />;
   const inv = invoice.data;
-  const reasons = latestReasons(inv.timeline);
+  const reasons = inv.reasons;
+  const reviewing = inv.status === "NEEDS_REVIEW";
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-baseline gap-3">
-        <Link to="/review" className="text-sm text-primary hover:underline">
-          ← Review queue
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border border-line bg-fill-2 px-3 py-2">
+        <Link to="/review" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink">
+          <ArrowLeft aria-hidden className="h-4 w-4" /> Queue
         </Link>
-        <h1 className="text-xl font-semibold">{inv.invoice_number ?? "Uploaded document"}</h1>
+        <h1 className="break-all font-mono text-lg font-semibold">{inv.invoice_number ?? "Uploaded document"}</h1>
         <StatusBadge status={inv.status} />
-        <span className="text-sm text-muted-foreground">
-          version {inv.version} · vendor {inv.vendor_id ?? "—"} · PO {inv.po_number ?? "—"} ·{" "}
-          {money(inv.total, inv.currency)}
-        </span>
+        <dl className="flex flex-wrap gap-x-4 text-sm text-ink-2">
+          <div className="flex gap-1"><dt>Vendor</dt><dd className="font-mono text-ink">{inv.vendor_id ?? "—"}</dd></div>
+          <div className="flex gap-1"><dt>PO</dt><dd className="font-mono text-ink">{inv.po_number ?? "—"}</dd></div>
+          <div className="flex gap-1"><dt>Total</dt><dd className="font-mono text-ink">{inv.currency} {money(inv.total)}</dd></div>
+          <div className="flex gap-1"><dt>Version</dt><dd className="font-mono text-ink">{inv.version}</dd></div>
+          <div className="flex gap-1"><dt>Received</dt><dd className="text-ink">{when(inv.created_at)}</dd></div>
+        </dl>
       </div>
 
       {reasons.length > 0 && (
-        <Card className="border-warning/50 bg-warning/5 p-4">
-          <h2 className="mb-2 text-sm font-semibold">
-            {inv.status === "NEEDS_REVIEW" ? "Why this needs a human" : "Flagged for review because"}
-          </h2>
-          <ul className="flex flex-wrap gap-2">
+        <Module title={reviewing ? "Why it needs your decision" : "Why it was flagged"} count={reasons.length} alert={reviewing}>
+          <ul className="grid gap-x-4 gap-y-1 px-3 py-2 sm:grid-cols-2">
             {reasons.map((r) => (
-              <li key={r} className="rounded bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
-                {humanize(r)}
+              <li key={r} className="flex items-start gap-2 text-sm">
+                <ReasonTag code={r} />
+                <span className="text-ink-2">{reasonInfo(r).explain}</span>
               </li>
             ))}
           </ul>
-        </Card>
+        </Module>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader title="Document" />
+      <div className="grid gap-2 lg:grid-cols-12">
+        <Module title="Three-way match" className="lg:col-span-8" extra={<span className="font-mono text-xs text-ink-2">{inv.purchase_order?.po_number ?? ""}</span>}>
+          <ThreeWayMatch inv={inv} />
+        </Module>
+        <Module title="Decision" className="lg:col-span-4">
+          <Decision inv={inv} />
+        </Module>
+
+        <Module title="Read from the document" className="lg:col-span-7">
+          <Evidence id={id} />
+        </Module>
+        <Module title="Document" className="lg:col-span-5">
           <DocumentPreview id={id} />
-        </Card>
+        </Module>
 
-        <div className="space-y-4">
-          <Actions invoice={inv} />
-
-          <Card>
-            <CardHeader title="Extracted fields and evidence" />
-            {fields.data && fields.data.length > 0 ? (
-              <table className="w-full">
-                <thead className="border-b border-border">
-                  <tr>
-                    <th className={th}>Field</th>
-                    <th className={th}>Value</th>
-                    <th className={`${th} text-right`}>Confidence</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fields.data.map((f) => {
-                    const low = Number(f.confidence) < 0.9;
-                    return (
-                      <tr key={f.field} className="border-b border-border last:border-0">
-                        <td className={`${td} text-muted-foreground`}>{f.field}</td>
-                        <td className={td} title={f.snippet ? `Page ${f.page ?? "?"}: “${f.snippet}”` : "No evidence quoted"}>
-                          {f.value ?? "—"}
-                        </td>
-                        <td className={`${td} text-right tabular-nums ${low ? "font-medium text-danger" : ""}`}>
-                          {Number(f.confidence).toFixed(2)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        <Module title="Audit trail" count={inv.timeline.length} className="lg:col-span-8" extra={inv.trace_id ? <span className="font-mono text-xs text-ink-2">trace {inv.trace_id.slice(0, 8)}</span> : null}>
+          <AuditTrail inv={inv} />
+        </Module>
+        <div className="space-y-2 lg:col-span-4">
+          <Module title="Approvals" count={inv.approvals.length}>
+            {inv.approvals.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-ink-2">No approvals yet.</p>
             ) : (
-              <Empty>No extraction for this invoice.</Empty>
+              <ul className="divide-y divide-line">
+                {inv.approvals.map((a, i) => (
+                  <li key={i} className="px-3 py-1.5 text-sm">
+                    <span className="font-semibold">{humanize(a.decision)}</span> by {a.reviewer} · v{a.invoice_version} ·{" "}
+                    <span className="font-mono text-[13px]">{money(a.amount)}</span>
+                    {a.invoice_version !== inv.version && <span className="ml-1 text-xs font-semibold text-red">void, older version</span>}
+                    {a.reason && <p className="truncate text-ink-2">“{a.reason}”</p>}
+                  </li>
+                ))}
+              </ul>
             )}
-          </Card>
-
-          <Card>
-            <CardHeader title="Lines" />
-            {inv.lines.length ? (
-              <table className="w-full">
-                <thead className="border-b border-border">
-                  <tr>
-                    <th className={th}>SKU</th>
-                    <th className={`${th} text-right`}>Qty</th>
-                    <th className={`${th} text-right`}>Unit price</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inv.lines.map((l) => (
-                    <tr key={l.line_no} className="border-b border-border last:border-0">
-                      <td className={td}>{l.sku}</td>
-                      <td className={`${td} text-right tabular-nums`}>{Number(l.qty)}</td>
-                      <td className={`${td} text-right tabular-nums`}>{money(l.unit_price)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          </Module>
+          <Module title="Model calls" count={inv.llm_calls.length}>
+            {inv.llm_calls.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-ink-2">No model calls for this invoice.</p>
             ) : (
-              <Empty>No lines yet.</Empty>
+              <ul className="divide-y divide-line">
+                {inv.llm_calls.map((c, i) => (
+                  <li key={i} className="flex flex-wrap justify-between gap-x-3 px-3 py-1.5 text-sm">
+                    <span>
+                      {c.model}
+                      {c.provider !== "anthropic" && <span className="ml-1 text-xs font-semibold text-amber">simulated</span>}
+                    </span>
+                    <span className="font-mono text-[13px] text-ink-2">
+                      {c.input_tokens}/{c.output_tokens} tok · {c.latency_ms} ms · ${Number(c.cost_usd).toFixed(4)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
-          </Card>
+          </Module>
         </div>
       </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader title={`Audit timeline${inv.trace_id ? ` · trace ${inv.trace_id.slice(0, 8)}` : ""}`} />
-          <ol className="divide-y divide-border">
-            {inv.timeline.map((e) => (
-              <li key={e.id} className="px-4 py-2 text-sm">
-                <div className="flex flex-wrap justify-between gap-2">
-                  <span className="font-medium">
-                    {e.event_type === "invoice.state_changed"
-                      ? `${humanize(String(e.payload.from))} → ${humanize(String(e.payload.to))}`
-                      : humanize(e.event_type)}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {e.actor} · {when(e.created_at)}
-                  </span>
-                </div>
-                {typeof e.payload.reason === "string" && (
-                  <p className="text-muted-foreground">“{e.payload.reason}”</p>
-                )}
-              </li>
-            ))}
-          </ol>
-        </Card>
-
-        <Card>
-          <CardHeader title="Model calls" />
-          {inv.llm_calls.length ? (
-            <table className="w-full">
-              <thead className="border-b border-border">
-                <tr>
-                  <th className={th}>Model</th>
-                  <th className={`${th} text-right`}>Tokens in/out</th>
-                  <th className={`${th} text-right`}>Latency</th>
-                  <th className={`${th} text-right`}>Cost (USD)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inv.llm_calls.map((c, i) => (
-                  <tr key={i} className="border-b border-border last:border-0">
-                    <td className={td}>
-                      {c.model}
-                      {c.provider === "fake" && <span className="ml-2 text-xs text-warning">simulated</span>}
-                    </td>
-                    <td className={`${td} text-right tabular-nums`}>
-                      {c.input_tokens}/{c.output_tokens}
-                    </td>
-                    <td className={`${td} text-right tabular-nums`}>{c.latency_ms} ms</td>
-                    <td className={`${td} text-right tabular-nums`}>{Number(c.cost_usd).toFixed(6)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <Empty>No model calls for this invoice.</Empty>
-          )}
-        </Card>
-      </div>
-
-      {inv.approvals.length > 0 && (
-        <Card>
-          <CardHeader title="Approvals" />
-          <ul className="divide-y divide-border">
-            {inv.approvals.map((a, i) => (
-              <li key={i} className="px-4 py-2 text-sm">
-                <span className="font-medium">{humanize(a.decision)}</span> by {a.reviewer} on version{" "}
-                {a.invoice_version} for {money(a.amount, inv.currency)}
-                {a.invoice_version !== inv.version && (
-                  <span className="ml-2 text-xs text-danger">void (older version)</span>
-                )}
-                {a.reason && <span className="text-muted-foreground"> · “{a.reason}”</span>}
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
     </div>
   );
 }

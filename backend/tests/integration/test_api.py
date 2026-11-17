@@ -68,6 +68,11 @@ def payload_for(session_factory, label, index):
     }
 
 
+def test_me_returns_the_reviewer_for_the_key(client):
+    assert client.get("/me", headers=RAVI).json() == {"name": "ravi"}
+    assert client.get("/me").status_code == 401
+
+
 def test_missing_or_wrong_key_is_rejected(client):
     assert client.get("/invoices").status_code == 401
     assert client.get("/invoices", headers={"X-API-Key": "nope"}).status_code == 401
@@ -208,6 +213,23 @@ def test_kill_switch_pauses_writes_but_not_reads(client, session_factory, monkey
     body = payload_for(session_factory, CaseLabel.CLEAN, 31)
     assert client.post("/invoices", json=body, headers=ASHA).status_code == 503
     assert client.get("/invoices", headers=ASHA).status_code == 200
+
+
+def test_queue_rows_carry_reasons_and_detail_carries_po_and_receipts(client, session_factory):
+    body = payload_for(session_factory, CaseLabel.PARTIAL_RECEIPT_OVERBILLED, 40)
+    invoice = client.post("/invoices", json=body, headers=ASHA).json()
+
+    rows = client.get("/invoices", params={"status": "NEEDS_REVIEW"}, headers=ASHA).json()
+    assert rows[0]["reasons"][0] == "QTY_OVER_RECEIVED"
+
+    detail = client.get(f"/invoices/{invoice['id']}", headers=ASHA).json()
+    assert detail["reasons"][0] == "QTY_OVER_RECEIVED"
+    po = detail["purchase_order"]
+    assert po["po_number"] == body["po_number"]
+    assert {line["sku"] for line in po["lines"]} == {line["sku"] for line in body["lines"]}
+    assert detail["receipt_count"] == 1
+    first = body["lines"][0]
+    assert float(detail["received"][first["sku"]]) < float(first["qty"])  # partial receipt
 
 
 def test_json_numbers_keep_decimal_precision():

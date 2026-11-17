@@ -115,7 +115,7 @@ accuracy results. Real-model numbers come from a `live` run, which records respo
 
 ## Documents
 
-- [Design and trade-offs](docs/design.md)
+- [Architecture and trade-offs](docs/architecture.md)
 - [Deployment](docs/deploy.md)
 - [Runbook](docs/runbook.md)
 - [Case study: what broke and what I changed](docs/case-study.md)

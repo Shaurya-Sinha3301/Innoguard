@@ -2,7 +2,7 @@ import uuid
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from invoiceguard.api import schemas
@@ -11,7 +11,7 @@ from invoiceguard.api.deps import get_session
 from invoiceguard.api.ratelimit import WRITE_GUARDS
 from invoiceguard.db import models as m
 from invoiceguard.domain import models as d
-from invoiceguard.workflow import service
+from invoiceguard.workflow import repo, service
 from invoiceguard.workflow.errors import (
     IllegalTransition,
     InvoiceNotFound,
@@ -51,17 +51,43 @@ def submit(
     return service.submit_invoice(session, invoice, actor=user)
 
 
-@router.get("", response_model=list[schemas.InvoiceOut])
+@router.get("", response_model=list[schemas.InvoiceRow])
 def list_invoices(
     status: str | None = None,
     limit: int = Query(default=50, ge=1, le=200),
     session: Session = Depends(get_session),
     _user: str = Depends(current_user),
-) -> list[m.Invoice]:
+) -> list[dict]:
     query = select(m.Invoice).order_by(m.Invoice.created_at.desc()).limit(limit)
     if status:
         query = query.where(m.Invoice.status == status)
-    return list(session.scalars(query))
+    rows = list(session.scalars(query))
+    reasons = _latest_reasons(session, [row.id for row in rows])
+    return [
+        {**schemas.InvoiceOut.model_validate(row).model_dump(), "reasons": reasons.get(row.id, [])}
+        for row in rows
+    ]
+
+
+def _latest_reasons(session: Session, ids: list[uuid.UUID]) -> dict[uuid.UUID, list[str]]:
+    """The reasons recorded on each invoice's most recent decision, from the audit log."""
+    if not ids:
+        return {}
+    found = session.execute(
+        text(
+            """
+            SELECT DISTINCT ON (invoice_id) invoice_id, payload->'reasons'
+            FROM audit_events
+            WHERE invoice_id = ANY(:ids)
+              AND event_type = 'invoice.state_changed'
+              AND jsonb_typeof(payload->'reasons') = 'array'
+              AND jsonb_array_length(payload->'reasons') > 0
+            ORDER BY invoice_id, id DESC
+            """
+        ),
+        {"ids": ids},
+    ).all()
+    return {invoice_id: list(reasons) for invoice_id, reasons in found}
 
 
 @router.get("/{invoice_id}", response_model=schemas.InvoiceDetail)
@@ -82,7 +108,26 @@ def get_invoice(
     llm_calls = session.scalars(
         select(m.LlmCall).where(m.LlmCall.invoice_id == invoice_id).order_by(m.LlmCall.id)
     ).all()
+    po = repo.load_po(session, row.po_number)
+    receipts = repo.load_receipts(session, row.po_number)
+    received: dict[str, Decimal] = {}
+    for receipt in receipts:
+        for line in receipt.lines:
+            received[line.sku] = received.get(line.sku, Decimal(0)) + line.qty
     return {
+        "reasons": _latest_reasons(session, [row.id]).get(row.id, []),
+        "purchase_order": None
+        if po is None
+        else {
+            "po_number": po.po_number,
+            "vendor_id": po.vendor_id,
+            "currency": po.currency,
+            "lines": [
+                {"sku": ln.sku, "qty": ln.qty, "unit_price": ln.unit_price} for ln in po.lines
+            ],
+        },
+        "receipt_count": len(receipts),
+        "received": received,
         **schemas.InvoiceOut.model_validate(row).model_dump(),
         "subtotal": row.subtotal,
         "tax": row.tax,

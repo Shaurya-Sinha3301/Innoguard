@@ -66,6 +66,7 @@ export type Invoice = {
   status: string;
   version: number;
   created_at: string;
+  reasons?: string[];
 };
 
 export type AuditEvent = {
@@ -81,6 +82,15 @@ export type InvoiceDetail = Invoice & {
   subtotal: string | null;
   tax: string | null;
   trace_id: string | null;
+  reasons: string[];
+  purchase_order: {
+    po_number: string;
+    vendor_id: string;
+    currency: string;
+    lines: { sku: string; qty: string; unit_price: string }[];
+  } | null;
+  receipt_count: number;
+  received: Record<string, string>;
   lines: { line_no: number; sku: string; qty: string; unit_price: string }[];
   approvals: {
     invoice_version: number;
@@ -147,6 +157,7 @@ export type MetricsSummary = {
 };
 
 export const api = {
+  me: () => request<{ name: string }>("/me"),
   listInvoices: (status?: string) =>
     request<Invoice[]>(`/invoices?limit=200${status ? `&status=${encodeURIComponent(status)}` : ""}`),
   invoice: (id: string) => request<InvoiceDetail>(`/invoices/${id}`),

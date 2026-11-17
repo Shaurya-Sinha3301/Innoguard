@@ -79,12 +79,27 @@ class AuditOut(BaseModel):
     created_at: datetime
 
 
+class LlmCallOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    step: str
+    provider: str
+    model: str
+    input_tokens: int
+    output_tokens: int
+    latency_ms: int
+    tokens_per_second: Decimal | None
+    cost_usd: Decimal
+
+
 class InvoiceDetail(InvoiceOut):
     subtotal: Decimal | None
     tax: Decimal | None
+    trace_id: str | None
     lines: list[LineOut]
     approvals: list[ApprovalOut]
     timeline: list[AuditOut]
+    llm_calls: list[LlmCallOut]
 
 
 class ExtractionFieldOut(BaseModel):

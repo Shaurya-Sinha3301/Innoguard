@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     extraction_mode: str = "anthropic"
     extraction_cache_dir: str = "/app/extraction-cache"
     extraction_max_attempts: int = 4
+    # Comma-separated browser origins allowed to call the API (the review UI).
+    cors_origins: str = "http://localhost:5173"
 
 
 settings = Settings()

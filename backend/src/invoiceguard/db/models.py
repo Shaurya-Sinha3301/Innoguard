@@ -234,6 +234,19 @@ class LlmCall(Base):
     )
 
 
+class ExtractionRecording(Base):
+    """A recorded model response keyed by file hash, shared by every service in replay mode."""
+
+    __tablename__ = "extraction_recordings"
+
+    file_hash: Mapped[str] = mapped_column(sa.Text, primary_key=True)
+    payload: Mapped[dict] = mapped_column(JSONB)
+    simulated: Mapped[bool] = mapped_column(server_default=sa.false())
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=_now()
+    )
+
+
 class AuditEvent(Base):
     """Append-only. A database trigger rejects UPDATE, DELETE and TRUNCATE."""
 

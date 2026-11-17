@@ -78,13 +78,18 @@ def get_invoice(
     timeline = session.scalars(
         select(m.AuditEvent).where(m.AuditEvent.invoice_id == invoice_id).order_by(m.AuditEvent.id)
     ).all()
+    llm_calls = session.scalars(
+        select(m.LlmCall).where(m.LlmCall.invoice_id == invoice_id).order_by(m.LlmCall.id)
+    ).all()
     return {
         **schemas.InvoiceOut.model_validate(row).model_dump(),
         "subtotal": row.subtotal,
         "tax": row.tax,
+        "trace_id": row.trace_id,
         "lines": sorted(row.lines, key=lambda line: line.line_no),
         "approvals": approvals,
         "timeline": timeline,
+        "llm_calls": llm_calls,
     }
 
 

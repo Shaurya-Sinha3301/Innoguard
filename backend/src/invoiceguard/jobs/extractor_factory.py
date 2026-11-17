@@ -1,13 +1,11 @@
-from pathlib import Path
-
 from invoiceguard.config import settings
-from invoiceguard.extraction.cache import CachedExtractor
+from invoiceguard.db.session import SessionLocal
+from invoiceguard.extraction.cache import DbCachedExtractor
 from invoiceguard.extraction.client import ClaudeExtractor, Extractor
 
 
 def build_extractor() -> Extractor:
-    """Live mode records every response to the cache; replay mode never calls the model."""
-    cache_dir = Path(settings.extraction_cache_dir)
+    """Live mode records every response; replay mode never calls the model."""
     if settings.extraction_mode == "replay":
-        return CachedExtractor(cache_dir)
-    return CachedExtractor(cache_dir, ClaudeExtractor(settings.extraction_model))
+        return DbCachedExtractor(SessionLocal)
+    return DbCachedExtractor(SessionLocal, ClaudeExtractor(settings.extraction_model))

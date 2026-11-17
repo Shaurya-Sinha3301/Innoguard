@@ -6,6 +6,8 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://invoiceguard:invoiceguard@localhost:5433/invoiceguard"
     redis_url: str = "redis://localhost:6380/0"
+    # Reviewer identities as "key:name" pairs, comma separated. Empty means nobody can sign in.
+    api_keys: str = ""
 
 
 settings = Settings()

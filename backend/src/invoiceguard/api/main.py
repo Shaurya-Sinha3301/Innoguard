@@ -2,8 +2,10 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from invoiceguard.api import health
+from invoiceguard.api.routers import invoices
 
 app = FastAPI(title="InvoiceGuard")
+app.include_router(invoices.router)
 
 
 @app.get("/health")

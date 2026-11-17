@@ -5,6 +5,8 @@ x-backend: &backend
   environment:
     DATABASE_URL: postgresql+psycopg://invoiceguard:invoiceguard@postgres:5432/invoiceguard
     REDIS_URL: redis://redis:6379/0
+    # Local development only. Real deployments set their own keys as secrets.
+    API_KEYS: dev-key:dev-reviewer
   volumes:
     - ./backend/src:/app/backend/src
 

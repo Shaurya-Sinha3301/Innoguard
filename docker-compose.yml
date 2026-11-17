@@ -1,0 +1,67 @@
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: deploy/Dockerfile.backend
+  environment:
+    DATABASE_URL: postgresql+psycopg://invoiceguard:invoiceguard@postgres:5432/invoiceguard
+    REDIS_URL: redis://redis:6379/0
+  volumes:
+    - ./backend/src:/app/backend/src
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: invoiceguard
+      POSTGRES_PASSWORD: invoiceguard
+      POSTGRES_DB: invoiceguard
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoiceguard -d invoiceguard"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    <<: *backend
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *backend
+    command: ["uvicorn", "invoiceguard.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  worker:
+    <<: *backend
+    command: ["celery", "-A", "invoiceguard.jobs.celery_app", "worker", "--loglevel=info"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:

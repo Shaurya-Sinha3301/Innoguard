@@ -5,7 +5,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    # Application traffic. On Neon this is the pooled URL (host ends in -pooler).
     database_url: str = "postgresql+psycopg://invoiceguard:invoiceguard@localhost:5433/invoiceguard"
+    # Migrations need a direct connection; on Neon this is DATABASE_URL_UNPOOLED.
+    # Falls back to database_url when unset (local Postgres has no pooler).
+    database_url_unpooled: str | None = None
     redis_url: str = "redis://localhost:6380/0"
     # Reviewer identities as "key:name" pairs, comma separated. Empty means nobody can sign in.
     api_keys: str = ""
@@ -24,15 +28,28 @@ class Settings(BaseSettings):
     rate_limit_uploads_per_minute: int = 10
     writes_enabled: bool = True
 
-    @field_validator("database_url")
+    @field_validator("database_url", "database_url_unpooled")
     @classmethod
-    def _use_psycopg_driver(cls, url: str) -> str:
+    def _use_psycopg_driver(cls, url: str | None) -> str | None:
         """Hosted Postgres (Neon, Render) hands out postgres:// or postgresql:// URLs;
         SQLAlchemy needs the driver named explicitly."""
+        if not url:
+            return None if url is None else url
         for prefix in ("postgres://", "postgresql://"):
             if url.startswith(prefix):
                 return "postgresql+psycopg://" + url[len(prefix) :]
         return url
+
+    @property
+    def migration_database_url(self) -> str:
+        return self.database_url_unpooled or self.database_url
+
+
+def uses_pooler(url: str) -> bool:
+    """Neon's pooled endpoints have a hostname ending in -pooler (PgBouncer, transaction mode)."""
+    from sqlalchemy.engine import make_url
+
+    return "-pooler" in (make_url(url).host or "")
 
 
 settings = Settings()

@@ -17,8 +17,11 @@ Check each provider's current pricing and free-tier limits before you start.
 
 ## 1. Postgres (Neon)
 
-Create a project and copy its connection string (it ends in `?sslmode=require`). That is
-the `DATABASE_URL` for both Render services.
+The project is linked with the Neon CLI (`neon init`, `neon deploy`; config in `neon.ts`).
+`neon env pull` writes `DATABASE_URL` (pooled, for the app) and `DATABASE_URL_UNPOOLED`
+(direct, for migrations) into the gitignored `.env.local`. Copy those two values into
+Render; the app adds the psycopg driver name itself and disables prepared statements on
+the pooled connection.
 
 ## 2. Redis
 
@@ -32,7 +35,9 @@ use a Redis that is not billed per command, such as Render Key Value in the same
 
 1. In Render, create a Blueprint from this repository; it reads `render.yaml`.
 2. When prompted, fill in:
-   - `DATABASE_URL`, `REDIS_URL`: from steps 1 and 2.
+   - `DATABASE_URL`: Neon's **pooled** URL (host ends in `-pooler`), on both services.
+   - `DATABASE_URL_UNPOOLED`: Neon's **direct** URL, on the API only; migrations use it.
+   - `REDIS_URL`: from step 2.
    - `API_KEYS`: reviewer keys as `key:name` pairs, for example
      `<a long random string>:demo-reviewer`. Generate the key yourself; never commit it.
    - `CORS_ORIGINS`: the Vercel URL from step 4 (you can set it after step 4).

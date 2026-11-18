@@ -13,7 +13,11 @@ services:
     dockerCommand: sh -c "alembic upgrade head && uvicorn invoiceguard.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
     healthCheckPath: /health
     envVars:
+      # Neon: DATABASE_URL is the pooled URL (app traffic); DATABASE_URL_UNPOOLED is the
+      # direct URL that `alembic upgrade head` uses at start-up.
       - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
         sync: false
       - key: REDIS_URL
         sync: false

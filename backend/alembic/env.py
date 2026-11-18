@@ -14,8 +14,9 @@ target_metadata = Base.metadata
 
 
 def _url() -> str:
-    # Tests point Alembic at a throwaway database through the config option.
-    return config.get_main_option("sqlalchemy.url") or settings.database_url
+    # Tests point Alembic at a throwaway database through the config option. Otherwise use
+    # the direct (unpooled) URL: migrations must not run through a transaction-mode pooler.
+    return config.get_main_option("sqlalchemy.url") or settings.migration_database_url
 
 
 def run_migrations_offline() -> None:

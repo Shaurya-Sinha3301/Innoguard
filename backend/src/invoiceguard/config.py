@@ -3,7 +3,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # hide_input_in_errors: a bad connection string must never be echoed into the logs,
+    # because it contains a password.
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True)
 
     # Application traffic. On Neon this is the pooled URL (host ends in -pooler).
     database_url: str = "postgresql+psycopg://invoiceguard:invoiceguard@localhost:5433/invoiceguard"
@@ -27,6 +29,23 @@ class Settings(BaseSettings):
     rate_limit_writes_per_minute: int = 60
     rate_limit_uploads_per_minute: int = 10
     writes_enabled: bool = True
+
+    @field_validator("redis_url", mode="before")
+    @classmethod
+    def _check_redis_url(cls, url: str) -> str:
+        """Fail early with a plain message, not a traceback from inside Celery. Values pasted
+        from a provider's dashboard often arrive with quotes, a 'REDIS_URL=' prefix, an
+        https:// REST address or a whole redis-cli command."""
+        url = url.strip().strip("\"'")
+        if url.upper().startswith("REDIS_URL="):
+            url = url.split("=", 1)[1].strip().strip("\"'")
+        if not url.startswith(("redis://", "rediss://", "unix://")):
+            raise ValueError(
+                "REDIS_URL must start with redis:// or rediss:// (a TLS Redis such as Upstash "
+                "uses rediss://default:<password>@<host>:6379). It looks like a different kind "
+                "of address, such as an https:// REST URL or a pasted redis-cli command."
+            )
+        return url
 
     @field_validator("database_url", "database_url_unpooled")
     @classmethod

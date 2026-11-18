@@ -1,6 +1,11 @@
-# Render Blueprint for InvoiceGuard: the API, one background worker, and Redis.
-# Postgres is on Neon (AWS us-east-2), so every service runs in Render's Ohio region next to
+# Render Blueprint for InvoiceGuard: everything on free plans, no payment card needed.
+# Postgres is on Neon (AWS us-east-2), so the services run in Render's Ohio region next to
 # it. Render prompts once for each `sync: false` value; see docs/deploy.md before applying.
+#
+# Render has no free plan for background workers, so the free web service runs the API,
+# the Celery worker and the outbox dispatcher in one container. A free web service sleeps
+# when idle; uploads made meanwhile wait in the Postgres outbox and are processed when it
+# wakes. To move the worker to its own (paid) service later, see docs/deploy.md.
 services:
   - type: web
     name: invoiceguard-api
@@ -9,9 +14,13 @@ services:
     region: ohio
     dockerfilePath: ./deploy/Dockerfile.backend
     dockerContext: .
-    # Single instance in Release 1, so migrating at start-up is safe. With several
-    # instances, move this to a paid pre-deploy command instead.
-    dockerCommand: sh -c "alembic upgrade head && uvicorn invoiceguard.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+    # Single instance, so migrating at start-up is safe. The solo pool keeps the worker to
+    # one process to fit the free plan's memory.
+    dockerCommand: >-
+      sh -c "alembic upgrade head
+      && (python -m invoiceguard.jobs.dispatcher &)
+      && (celery -A invoiceguard.jobs.celery_app worker --pool=solo --loglevel=info &)
+      && exec uvicorn invoiceguard.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
     healthCheckPath: /health
     envVars:
       # Neon: DATABASE_URL is the pooled URL (app traffic); DATABASE_URL_UNPOOLED is the
@@ -41,32 +50,6 @@ services:
         value: "30"
       - key: RATE_LIMIT_UPLOADS_PER_MINUTE
         value: "5"
-
-  # Workers have no free plan on Render. To keep the demo to one paid instance, this
-  # container runs the outbox dispatcher alongside the Celery worker. Trade-off: if the
-  # dispatcher process dies, nothing restarts it until the container restarts.
-  - type: worker
-    name: invoiceguard-worker
-    runtime: docker
-    plan: 0.5c-512mb
-    region: ohio
-    dockerfilePath: ./deploy/Dockerfile.backend
-    dockerContext: .
-    dockerCommand: sh -c "python -m invoiceguard.jobs.dispatcher & exec celery -A invoiceguard.jobs.celery_app worker --loglevel=info --concurrency=2"
-    envVars:
-      - key: DATABASE_URL
-        sync: false
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: invoiceguard-redis
-          property: connectionString
-      - key: EXTRACTION_MODE
-        value: replay
-      - key: EXTRACTION_PROVIDER
-        value: groq
-      - key: EXTRACTION_MODEL
-        value: openai/gpt-oss-20b
       - key: GROQ_API_KEY
         sync: false
 

@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, FileStack, Files, LogOut, ShieldCheck, TriangleAlert, Upload as UploadIcon } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
-import { api, ApiError, getApiKey, setApiKey } from "./api";
+import { API_URL, api, ApiError, getApiKey, setApiKey } from "./api";
 import { Button, cx, ErrorNote, Module } from "./components/ui";
 import FailedJobs from "./pages/FailedJobs";
 import InvoiceDetailPage from "./pages/InvoiceDetail";
@@ -35,7 +35,18 @@ function SignIn({ onSignIn }: { onSignIn: () => void }) {
       onSignIn();
     } catch (e) {
       setApiKey(null);
-      setError(e instanceof ApiError && e.status === 401 ? new Error("That key was not recognised.") : e);
+      if (e instanceof ApiError && e.status === 401) {
+        setError(new Error("That key was not recognised. Type only the part before any colon."));
+      } else if (e instanceof ApiError) {
+        setError(e);
+      } else {
+        // fetch itself failed: wrong address, the API is asleep or starting, or CORS blocked it.
+        setError(
+          new Error(
+            `Could not reach the server at ${API_URL}. If it was idle it can take up to a minute to wake up; try again.`,
+          ),
+        );
+      }
     } finally {
       setChecking(false);
     }

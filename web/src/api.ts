@@ -1,6 +1,12 @@
 /** Typed client for the InvoiceGuard API. The reviewer's key lives in sessionStorage only. */
 
-export const API_URL: string = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+/** Where the API lives. VITE_API_URL (set at build time) wins; otherwise a page opened on
+ * localhost talks to the local API and any other host talks to the hosted demo API. */
+const HOSTED_API = "https://invoiceguard-api-rbcd.onrender.com";
+const isLocalPage = ["localhost", "127.0.0.1"].includes(globalThis.location?.hostname ?? "localhost");
+export const API_URL: string = (
+  import.meta.env.VITE_API_URL ?? (isLocalPage ? "http://localhost:8000" : HOSTED_API)
+).replace(/\/+$/, "");
 const KEY = "invoiceguard.apiKey";
 
 export function getApiKey(): string | null {

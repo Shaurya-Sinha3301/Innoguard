@@ -72,7 +72,8 @@ The hosted worker then processes them through the normal outbox and queue path.
 ## Operating the demo
 
 - Busier demo: move the worker to its own Render background worker (paid) by splitting the
-  `celery` and dispatcher commands out of the web service's start command.
+  `celery` and dispatcher lines out of `deploy/start.sh` and giving the worker service its own
+  start command.
 
 - Pause all writes: set `WRITES_ENABLED=false` on the API service.
 - Live extraction instead of replay: set `EXTRACTION_MODE=live` and `GROQ_API_KEY` on the

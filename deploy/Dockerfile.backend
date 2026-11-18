@@ -11,6 +11,8 @@ RUN pip install --no-cache-dir -e .
 
 COPY backend/alembic.ini ./
 COPY backend/alembic ./alembic
+COPY deploy/start.sh /app/start.sh
 
-# The start command is set per service (API, worker, migrations) by compose or the host.
-CMD ["uvicorn", "invoiceguard.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Default: the hosted free-plan container (migrate, dispatcher, worker, API). Docker Compose
+# overrides this per service for local development.
+CMD ["sh", "/app/start.sh"]

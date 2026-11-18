@@ -14,13 +14,9 @@ services:
     region: ohio
     dockerfilePath: ./deploy/Dockerfile.backend
     dockerContext: .
-    # Single instance, so migrating at start-up is safe. The solo pool keeps the worker to
-    # one process to fit the free plan's memory.
-    dockerCommand: >-
-      sh -c "alembic upgrade head
-      && (python -m invoiceguard.jobs.dispatcher &)
-      && (celery -A invoiceguard.jobs.celery_app worker --pool=solo --loglevel=info &)
-      && exec uvicorn invoiceguard.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+    # No dockerCommand: the image's default command (deploy/start.sh) migrates, then runs the
+    # dispatcher, the Celery worker (solo pool, one process) and the API. Single instance, so
+    # migrating at start-up is safe.
     healthCheckPath: /health
     envVars:
       # Neon: DATABASE_URL is the pooled URL (app traffic); DATABASE_URL_UNPOOLED is the

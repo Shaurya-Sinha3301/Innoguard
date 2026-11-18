@@ -1,11 +1,12 @@
-# Render Blueprint for the InvoiceGuard API and background worker.
-# Postgres comes from Neon and Redis from Upstash (or any Redis); paste their URLs when
-# Render prompts for the sync: false values. See docs/deploy.md before applying.
+# Render Blueprint for InvoiceGuard: the API, one background worker, and Redis.
+# Postgres is on Neon (AWS us-east-2), so every service runs in Render's Ohio region next to
+# it. Render prompts once for each `sync: false` value; see docs/deploy.md before applying.
 services:
   - type: web
     name: invoiceguard-api
     runtime: docker
     plan: free
+    region: ohio
     dockerfilePath: ./deploy/Dockerfile.backend
     dockerContext: .
     # Single instance in Release 1, so migrating at start-up is safe. With several
@@ -20,7 +21,10 @@ services:
       - key: DATABASE_URL_UNPOOLED
         sync: false
       - key: REDIS_URL
-        sync: false
+        fromService:
+          type: keyvalue
+          name: invoiceguard-redis
+          property: connectionString
       - key: API_KEYS
         sync: false
       - key: CORS_ORIGINS
@@ -45,6 +49,7 @@ services:
     name: invoiceguard-worker
     runtime: docker
     plan: 0.5c-512mb
+    region: ohio
     dockerfilePath: ./deploy/Dockerfile.backend
     dockerContext: .
     dockerCommand: sh -c "python -m invoiceguard.jobs.dispatcher & exec celery -A invoiceguard.jobs.celery_app worker --loglevel=info --concurrency=2"
@@ -52,7 +57,10 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL
-        sync: false
+        fromService:
+          type: keyvalue
+          name: invoiceguard-redis
+          property: connectionString
       - key: EXTRACTION_MODE
         value: replay
       - key: EXTRACTION_PROVIDER
@@ -61,3 +69,13 @@ services:
         value: openai/gpt-oss-20b
       - key: GROQ_API_KEY
         sync: false
+
+  # Queue for the worker. An empty allow list means only Render services on the private
+  # network can reach it; nothing is exposed to the internet. The outbox in Postgres is the
+  # durable record, so losing queued messages on a restart loses no work.
+  - type: keyvalue
+    name: invoiceguard-redis
+    plan: free
+    region: ohio
+    maxmemoryPolicy: noeviction
+    ipAllowList: []

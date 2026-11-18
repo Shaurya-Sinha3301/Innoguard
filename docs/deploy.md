@@ -7,10 +7,10 @@ is itself part of the demo.
 
 | Part | Where | Notes |
 | --- | --- | --- |
-| API | Render web service (`render.yaml`) | Free plan sleeps when idle, so the first request after a pause is slow |
-| Worker + dispatcher | Render background worker | No free plan for workers; check current pricing |
-| Postgres | Neon | Paste the connection string as given; the app adds the driver name |
-| Redis | Upstash, or Render Key Value | See the Redis note below |
+| API | Render web service, Ohio (`render.yaml`) | Free plan sleeps when idle, so the first request after a pause is slow |
+| Worker + dispatcher | Render background worker, Ohio | No free plan for workers; check current pricing |
+| Postgres | Neon, AWS us-east-2 | Pooled URL for the app, direct URL for migrations |
+| Redis | Render Key Value, Ohio | Created by the Blueprint, private network only |
 | Review UI | Vercel, from `web/` | Static build |
 
 Check each provider's current pricing and free-tier limits before you start.
@@ -25,19 +25,18 @@ the pooled connection.
 
 ## 2. Redis
 
-Create a Redis database and copy its `rediss://` URL as `REDIS_URL`.
-
-**Note:** a Celery worker polls Redis continuously even when idle. On a free tier with a
-monthly command quota (Upstash bills per command) that can use the quota up. If it does,
-use a Redis that is not billed per command, such as Render Key Value in the same region.
+Nothing to do: the Blueprint creates a free Render Key Value instance in Ohio and injects
+its private `REDIS_URL` into the API and the worker. It accepts no connections from the
+internet. A per-command-billed Redis (such as Upstash) is a poor fit here, because a Celery
+worker polls continuously even when idle.
 
 ## 3. API and worker (Render)
 
-1. In Render, create a Blueprint from this repository; it reads `render.yaml`.
+1. In Render, create a Blueprint from this repository; it reads `render.yaml` and creates
+   the API, the worker and Redis, all in Ohio next to the Neon database.
 2. When prompted, fill in:
    - `DATABASE_URL`: Neon's **pooled** URL (host ends in `-pooler`), on both services.
    - `DATABASE_URL_UNPOOLED`: Neon's **direct** URL, on the API only; migrations use it.
-   - `REDIS_URL`: from step 2.
    - `API_KEYS`: reviewer keys as `key:name` pairs, for example
      `<a long random string>:demo-reviewer`. Generate the key yourself; never commit it.
    - `CORS_ORIGINS`: the Vercel URL from step 4 (you can set it after step 4).

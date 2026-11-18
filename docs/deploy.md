@@ -9,7 +9,7 @@ is itself part of the demo.
 | --- | --- | --- |
 | API + worker + dispatcher | One Render free web service, Ohio (`render.yaml`) | No payment card needed. Sleeps when idle; the first request after a pause is slow, and queued uploads are processed when it wakes |
 | Postgres | Neon, AWS us-east-2 | Pooled URL for the app, direct URL for migrations |
-| Redis | Render Key Value, Ohio | Created by the Blueprint, private network only |
+| Redis | Upstash, free | Render allows only one free Key Value instance per account, so the queue uses Upstash |
 | Review UI | Vercel, from `web/` | Static build |
 
 Check each provider's current pricing and free-tier limits before you start.
@@ -22,19 +22,25 @@ The project is linked with the Neon CLI (`neon init`, `neon deploy`; config in `
 Render; the app adds the psycopg driver name itself and disables prepared statements on
 the pooled connection.
 
-## 2. Redis
+## 2. Redis (Upstash, free)
 
-Nothing to do: the Blueprint creates a free Render Key Value instance in Ohio and injects
-its private `REDIS_URL` into the API and the worker. It accepts no connections from the
-internet. A per-command-billed Redis (such as Upstash) is a poor fit here, because a Celery
-worker polls continuously even when idle.
+1. Sign up at upstash.com and create a **Redis** database in a US East region (closest to
+   Render's Ohio), with TLS on.
+2. Copy its **`rediss://...`** connection URL. This is your `REDIS_URL`.
+
+Render allows only one free Key Value instance per account, which is why the Blueprint
+does not create one. Upstash bills per command, and a Celery worker polls Redis while it is
+awake; the free service sleeps when idle, so check Upstash's current free quota and watch
+its usage. If the quota runs out, jobs wait safely in the Postgres outbox, and you can
+switch to a Render Key Value instance (paid) or another Redis.
 
 ## 3. API and worker (Render)
 
 1. In Render, create a Blueprint from this repository; it reads `render.yaml` and creates
-   two free services in Ohio next to the Neon database: the app (API, worker and
-   dispatcher in one container) and Redis. No payment card is needed.
+   one free service in Ohio next to the Neon database: the app (API, worker and
+   dispatcher in one container). No payment card is needed.
 2. When prompted, fill in:
+   - `REDIS_URL`: the `rediss://` URL from step 2.
    - `DATABASE_URL`: Neon's **pooled** URL (host ends in `-pooler`).
    - `DATABASE_URL_UNPOOLED`: Neon's **direct** URL; migrations use it.
    - `API_KEYS`: reviewer keys as `key:name` pairs, for example

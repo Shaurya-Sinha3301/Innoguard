@@ -1,5 +1,5 @@
 # Render Blueprint for InvoiceGuard: everything on free plans, no payment card needed.
-# Postgres is on Neon (AWS us-east-2), so the services run in Render's Ohio region next to
+# Postgres is on Neon (AWS us-east-2), so the service runs in Render's Ohio region next to
 # it. Render prompts once for each `sync: false` value; see docs/deploy.md before applying.
 #
 # Render has no free plan for background workers, so the free web service runs the API,
@@ -29,11 +29,10 @@ services:
         sync: false
       - key: DATABASE_URL_UNPOOLED
         sync: false
+      # Redis from Upstash (free, no card): paste its rediss:// URL when prompted. Render
+      # allows only one free Key Value instance per account, so it is not created here.
       - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: invoiceguard-redis
-          property: connectionString
+        sync: false
       - key: API_KEYS
         sync: false
       - key: CORS_ORIGINS
@@ -52,13 +51,3 @@ services:
         value: "5"
       - key: GROQ_API_KEY
         sync: false
-
-  # Queue for the worker. An empty allow list means only Render services on the private
-  # network can reach it; nothing is exposed to the internet. The outbox in Postgres is the
-  # durable record, so losing queued messages on a restart loses no work.
-  - type: keyvalue
-    name: invoiceguard-redis
-    plan: free
-    region: ohio
-    maxmemoryPolicy: noeviction
-    ipAllowList: []

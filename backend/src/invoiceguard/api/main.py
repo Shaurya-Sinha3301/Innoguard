@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from invoiceguard.api import health
 from invoiceguard.api.auth import current_user
-from invoiceguard.api.routers import documents, invoices, metrics
+from invoiceguard.api.routers import documents, invoices, metrics, packs
 from invoiceguard.config import settings
 
 app = FastAPI(title="InvoiceGuard")
@@ -17,6 +17,7 @@ app.add_middleware(
 app.include_router(invoices.router)
 app.include_router(documents.router)
 app.include_router(metrics.router)
+app.include_router(packs.router)
 
 
 @app.get("/me")

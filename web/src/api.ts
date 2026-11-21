@@ -162,7 +162,10 @@ export type MetricsSummary = {
   operations: { open_failed_jobs: number; outbox_pending: number };
 };
 
+import type { Manifest } from "./pack";
+
 export const api = {
+  pack: (id: string) => request<Manifest>(`/packs/${id}`),
   me: () => request<{ name: string }>("/me"),
   listInvoices: (status?: string) =>
     request<Invoice[]>(`/invoices?limit=200${status ? `&status=${encodeURIComponent(status)}` : ""}`),

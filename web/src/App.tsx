@@ -4,6 +4,7 @@ import { useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { API_URL, api, ApiError, getApiKey, setApiKey } from "./api";
 import { Button, cx, ErrorNote, Module } from "./components/ui";
+import { setPack } from "./pack";
 import FailedJobs from "./pages/FailedJobs";
 import InvoiceDetailPage from "./pages/InvoiceDetail";
 import InvoiceList from "./pages/InvoiceList";
@@ -160,6 +161,16 @@ function NavTab({ to, icon: Icon, label, count, alert }: { to: string; icon: typ
 
 function Shell({ onSignOut }: { onSignOut: () => void }) {
   const me = useQuery({ queryKey: ["me"], queryFn: api.me, staleTime: Infinity });
+  // The pack manifest supplies reason texts, tolerances and thresholds; see pack.ts.
+  useQuery({
+    queryKey: ["pack", "invoices"],
+    queryFn: async () => {
+      const manifest = await api.pack("invoices");
+      setPack(manifest);
+      return manifest;
+    },
+    staleTime: Infinity,
+  });
   const metrics = useQuery({ queryKey: ["metrics"], queryFn: api.metrics, refetchInterval: 10000 });
   const review = metrics.data?.invoices_by_status.NEEDS_REVIEW ?? 0;
   const failed = metrics.data?.operations.open_failed_jobs ?? 0;

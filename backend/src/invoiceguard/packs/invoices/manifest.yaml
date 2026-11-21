@@ -1,0 +1,56 @@
+id: invoices
+name: Supplier invoices
+version: 1
+description: Reads a supplier invoice, matches it to the purchase order and goods receipts, and sends anything doubtful to a person.
+document: Supplier invoice (PDF)
+
+fields:
+  - { name: invoice_number, label: Invoice number }
+  - { name: vendor_id, label: Vendor }
+  - { name: po_number, label: PO number }
+  - { name: currency, label: Currency, type: currency }
+  - { name: subtotal, label: Subtotal, type: money }
+  - { name: tax, label: Tax, type: money }
+  - { name: total, label: Total, type: money }
+
+reasons:
+  - { code: PRICE_VARIANCE, label: "Price variance", explain: "A unit price differs from the PO price by more than the 2% tolerance." }
+  - { code: QTY_OVER_RECEIVED, label: "Billed over received", explain: "The invoice bills more units than the goods receipts show arrived." }
+  - { code: QTY_OVER_ORDERED, label: "Billed over ordered", explain: "The invoice bills more units than the purchase order ordered." }
+  - { code: NO_RECEIPT, label: "No goods receipt", explain: "Nothing has been recorded as received against this PO." }
+  - { code: NO_PO, label: "No purchase order", explain: "The PO number on the invoice does not match a purchase order on file." }
+  - { code: VENDOR_MISMATCH, label: "Vendor mismatch", explain: "The vendor on the invoice is not the vendor on the purchase order." }
+  - { code: CURRENCY_MISMATCH, label: "Currency mismatch", explain: "The invoice currency differs from the purchase order currency." }
+  - { code: UNKNOWN_SKU, label: "Item not on PO", explain: "An invoice line is for an item the purchase order does not include." }
+  - { code: LINE_SUM_MISMATCH, label: "Lines don't add up", explain: "The line amounts do not sum to the subtotal printed on the invoice." }
+  - { code: TOTAL_MISMATCH, label: "Total doesn't add up", explain: "Subtotal plus tax does not equal the total printed on the invoice." }
+  - { code: NO_LINES, label: "No line items", explain: "No line items could be read from the invoice." }
+  - { code: DUPLICATE_EXACT, label: "Exact duplicate", explain: "The same file has been submitted before." }
+  - { code: DUPLICATE_BUSINESS_KEY, label: "Possible duplicate", explain: "This vendor already has an invoice with the same number." }
+  - { code: HIGH_VALUE, label: "High value", explain: "Above the auto-approval limit, so policy always asks a human." }
+  - { code: LOW_EXTRACTION_CONFIDENCE, label: "Low read confidence", explain: "At least one field was read with low confidence or without matching evidence.", severity: soft }
+  - { code: LOW_MATCH_QUALITY, label: "Lines don't match", explain: "Not every invoice line matched its PO and receipt cleanly.", severity: soft }
+  - { code: EXTRACTION_INCOMPLETE, label: "Incomplete read", explain: "Required fields could not be read, so the invoice was not reconciled." }
+  - { code: EXTRACTION_FAILED, label: "Read failed", explain: "The document could not be read." }
+
+reason_prefixes:
+  - { code: MISSING_FIELD, label: "Missing field", explain: "A required field was not found on the document" }
+  - { code: UNPARSEABLE, label: "Unreadable value", explain: "A value could not be read as a number or code" }
+  - { code: EVIDENCE_NOT_FOUND, label: "Unverified value", explain: "The text quoted for this value is not in the PDF" }
+
+implied_reason: LOW_MATCH_QUALITY
+
+thresholds:
+  min_extraction_confidence: "0.90"
+  min_match_quality: "1"
+  max_auto_amount: "10000"
+
+tolerances:
+  price_pct: "2"
+  qty_pct: "0"
+  amount_abs: "0.01"
+
+queue_columns: [ref, vendor, po, reasons, amount, age]
+detail_sections: [reasons, three_way_match, decision, evidence, document, audit, approvals, model_calls]
+
+synthetic_data_notice: "Synthetic demo data. Figures here are not accuracy results."

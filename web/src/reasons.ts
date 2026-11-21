@@ -1,4 +1,6 @@
-/** Plain-language names and explanations for the reason codes the backend records. */
+/** Plain-language names and explanations for the reason codes the backend records. The loaded
+ * pack manifest is the source of truth; the table below is only the fallback before it loads. */
+import { getPack } from "./pack";
 
 type Reason = { label: string; explain: string };
 
@@ -30,10 +32,14 @@ const PREFIXED: Record<string, Reason> = {
 };
 
 export function reasonInfo(code: string): Reason {
-  if (REASONS[code]) return REASONS[code];
+  const pack = getPack();
+  const declared = pack?.reasons.find((r) => r.code === code);
+  if (declared) return declared;
+  if (REASONS[code] && !pack) return REASONS[code];
   const [prefix, field] = code.split(":");
-  if (field && PREFIXED[prefix]) {
-    const base = PREFIXED[prefix];
+  const prefixed = pack?.reason_prefixes.find((r) => r.code === prefix) ?? PREFIXED[prefix];
+  if (field && prefixed) {
+    const base = prefixed;
     return { label: `${base.label}: ${field}`, explain: `${base.explain} (${field}).` };
   }
   return { label: code.replace(/_/g, " ").toLowerCase(), explain: "" };
@@ -42,6 +48,7 @@ export function reasonInfo(code: string): Reason {
 /** Reasons worth showing in a compact list. "Lines don't match" is implied by any
  * line-level reason, so it only shows on its own. */
 export function primaryReasons(codes: string[]): string[] {
-  const rest = codes.filter((c) => c !== "LOW_MATCH_QUALITY");
+  const implied = getPack()?.implied_reason ?? "LOW_MATCH_QUALITY";
+  const rest = codes.filter((c) => c !== implied);
   return rest.length ? rest : codes;
 }

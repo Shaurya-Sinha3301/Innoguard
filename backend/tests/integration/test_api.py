@@ -241,3 +241,26 @@ def test_json_numbers_keep_decimal_precision():
     parsed = InvoiceIn.model_validate_json(raw)
     assert str(parsed.lines[0].unit_price) == "0.1"
     assert str(parsed.total) == "0.3"
+
+
+def test_packs_need_a_key(client):
+    assert client.get("/packs").status_code == 401
+    assert client.get("/packs/invoices").status_code == 401
+
+
+def test_packs_lists_the_installed_packs(client):
+    body = client.get("/packs", headers=ASHA).json()
+    assert [p["id"] for p in body] == ["invoices"]
+
+
+def test_pack_manifest_carries_reasons_thresholds_and_layout(client):
+    body = client.get("/packs/invoices", headers=ASHA).json()
+    assert body["id"] == "invoices"
+    assert any(r["code"] == "PRICE_VARIANCE" for r in body["reasons"])
+    assert body["thresholds"]["min_extraction_confidence"] == "0.90"
+    assert body["tolerances"]["price_pct"] == "2"
+    assert "three_way_match" in body["detail_sections"]
+
+
+def test_unknown_pack_is_a_404(client):
+    assert client.get("/packs/payroll", headers=ASHA).status_code == 404

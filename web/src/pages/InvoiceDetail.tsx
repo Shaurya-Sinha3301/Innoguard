@@ -32,10 +32,9 @@ import {
   th,
 } from "../components/ui";
 import { clock, humanize, isSimulated, money, qty, when } from "../format";
+import { getPack, lowConfidence, priceTolerance } from "../pack";
 import { reasonInfo } from "../reasons";
 
-const PRICE_TOLERANCE = 0.02;
-const LOW_CONFIDENCE = 0.9;
 
 /* ---------- Three-way match: invoice line vs PO line vs goods received ---------- */
 
@@ -72,7 +71,7 @@ function ThreeWayMatch({ inv }: { inv: InvoiceDetail }) {
             const overReceived = received !== null && invoiced > received;
             const overOrdered = poLine ? invoiced > Number(poLine.qty) : false;
             const priceOff = poLine
-              ? Math.abs(price - Number(poLine.unit_price)) > Number(poLine.unit_price) * PRICE_TOLERANCE
+              ? Math.abs(price - Number(poLine.unit_price)) > Number(poLine.unit_price) * priceTolerance()
               : false;
             return (
               <tr key={line.line_no}>
@@ -110,7 +109,7 @@ function ThreeWayMatch({ inv }: { inv: InvoiceDetail }) {
         </tfoot>
       </Table>
       <p className="px-4 py-2 text-xs text-ink-2">
-        Highlighted cells disagree. Price tolerance 2%; quantities must match exactly. Received sums {inv.receipt_count}{" "}
+        Highlighted cells disagree. Price tolerance {Number(getPack()?.tolerances.price_pct ?? 2)}%; quantities must match exactly. Received sums {inv.receipt_count}{" "}
         goods receipt{inv.receipt_count === 1 ? "" : "s"} on {po?.po_number ?? inv.po_number ?? "the PO"}.
       </p>
     </>
@@ -135,7 +134,7 @@ function Evidence({ id }: { id: string }) {
       </thead>
       <tbody>
         {fields.data.map((f) => {
-          const low = Number(f.confidence) < LOW_CONFIDENCE;
+          const low = Number(f.confidence) < lowConfidence();
           return (
             <tr key={f.field}>
               <td className={cx(td, "text-ink-2")}>{humanize(f.field)}</td>

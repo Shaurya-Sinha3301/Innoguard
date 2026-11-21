@@ -2,23 +2,23 @@
   "overall": {
     "cases": 216,
     "false_approvals": 0,
-    "misread_auto_approvals": 0,
+    "misread_auto_approvals": 1,
     "false_approval_proportion": 0.0,
     "bad_invoice_escape_rate": 0.0,
-    "detection_precision": 0.8438,
+    "detection_precision": 0.8482,
     "detection_recall": 1.0,
-    "straight_through_rate": 0.6667,
-    "review_rate": 0.8056,
-    "decision_accuracy": 0.9444,
+    "straight_through_rate": 0.6944,
+    "review_rate": 0.8009,
+    "decision_accuracy": 0.9491,
     "field_exact_match": {
       "invoice_number": 1.0,
       "vendor_id": 0.9259,
-      "po_number": 0.9398,
+      "po_number": 0.9352,
       "currency": 1.0,
       "subtotal": 1.0,
       "tax": 1.0,
-      "total": 0.9259,
-      "lines": 0.8796
+      "total": 0.9398,
+      "lines": 0.8843
     },
     "model_calls": 0,
     "p50_latency_ms": null,
@@ -30,23 +30,23 @@
     "dev": {
       "cases": 144,
       "false_approvals": 0,
-      "misread_auto_approvals": 0,
+      "misread_auto_approvals": 1,
       "false_approval_proportion": 0.0,
       "bad_invoice_escape_rate": 0.0,
-      "detection_precision": 0.8308,
+      "detection_precision": 0.8372,
       "detection_recall": 1.0,
-      "straight_through_rate": 0.5833,
-      "review_rate": 0.8194,
-      "decision_accuracy": 0.9306,
+      "straight_through_rate": 0.625,
+      "review_rate": 0.8125,
+      "decision_accuracy": 0.9375,
       "field_exact_match": {
         "invoice_number": 1.0,
-        "vendor_id": 0.9236,
-        "po_number": 0.9167,
+        "vendor_id": 0.9375,
+        "po_number": 0.9306,
         "currency": 1.0,
         "subtotal": 1.0,
         "tax": 1.0,
         "total": 0.9306,
-        "lines": 0.875
+        "lines": 0.8681
       },
       "model_calls": 0,
       "p50_latency_ms": null,
@@ -67,13 +67,13 @@
       "decision_accuracy": 0.9722,
       "field_exact_match": {
         "invoice_number": 1.0,
-        "vendor_id": 0.9306,
-        "po_number": 0.9861,
+        "vendor_id": 0.9028,
+        "po_number": 0.9444,
         "currency": 1.0,
         "subtotal": 1.0,
         "tax": 1.0,
-        "total": 0.9167,
-        "lines": 0.8889
+        "total": 0.9583,
+        "lines": 0.9167
       },
       "model_calls": 0,
       "p50_latency_ms": null,
@@ -86,52 +86,52 @@
   "curve": [
     {
       "threshold": 0.5,
-      "coverage": 0.1204,
+      "coverage": 0.125,
       "escape_rate": 0.0
     },
     {
       "threshold": 0.55,
-      "coverage": 0.1204,
+      "coverage": 0.125,
       "escape_rate": 0.0
     },
     {
       "threshold": 0.6,
-      "coverage": 0.1111,
+      "coverage": 0.1157,
       "escape_rate": 0.0
     },
     {
       "threshold": 0.65,
-      "coverage": 0.1111,
+      "coverage": 0.1157,
       "escape_rate": 0.0
     },
     {
       "threshold": 0.7,
-      "coverage": 0.1111,
+      "coverage": 0.1157,
       "escape_rate": 0.0
     },
     {
       "threshold": 0.75,
-      "coverage": 0.1111,
+      "coverage": 0.1157,
       "escape_rate": 0.0
     },
     {
       "threshold": 0.8,
-      "coverage": 0.1111,
+      "coverage": 0.1157,
       "escape_rate": 0.0
     },
     {
       "threshold": 0.85,
-      "coverage": 0.1111,
+      "coverage": 0.1157,
       "escape_rate": 0.0
     },
     {
       "threshold": 0.9,
-      "coverage": 0.1111,
+      "coverage": 0.1157,
       "escape_rate": 0.0
     },
     {
       "threshold": 0.95,
-      "coverage": 0.1111,
+      "coverage": 0.1157,
       "escape_rate": 0.0
     },
     {

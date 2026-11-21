@@ -58,6 +58,10 @@ jobs:
         run: python -m invoiceguard.evaluation.runner --extractor oracle --gate
       - name: Controls under simulated extraction errors
         run: python -m invoiceguard.evaluation.runner --extractor noisy --gate
+      - name: Expenses pack, oracle extraction
+        run: python -m invoiceguard.packs.expenses.evaluation --extractor oracle --gate
+      - name: Expenses pack, simulated extraction errors
+        run: python -m invoiceguard.packs.expenses.evaluation --extractor noisy --gate
       - name: Recorded model runs, if any are committed
         run: |
           # Folders are named <provider>__<model>, with '/' in the model written as '__'.

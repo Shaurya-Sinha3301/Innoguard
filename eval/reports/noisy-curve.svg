@@ -7,7 +7,7 @@
 <text x="42" y="252" text-anchor="end">0%</text>
 <text x="48" y="266" text-anchor="middle">0.5</text>
 <text x="472" y="266" text-anchor="middle">0.99</text>
-<path d="M48.0,227.4 L91.3,227.4 L134.5,229.3 L177.8,229.3 L221.1,229.3 L264.3,229.3 L307.6,229.3 L350.9,229.3 L394.1,229.3 L437.4,229.3 L472.0,252.0" fill="none" stroke="#1d4ed8" stroke-width="2"/>
+<path d="M48.0,226.5 L91.3,226.5 L134.5,228.4 L177.8,228.4 L221.1,228.4 L264.3,228.4 L307.6,228.4 L350.9,228.4 L394.1,228.4 L437.4,228.4 L472.0,252.0" fill="none" stroke="#1d4ed8" stroke-width="2"/>
 <path d="M48.0,252.0 L91.3,252.0 L134.5,252.0 L177.8,252.0 L221.1,252.0 L264.3,252.0 L307.6,252.0 L350.9,252.0 L394.1,252.0 L437.4,252.0 L472.0,252.0" fill="none" stroke="#dc2626" stroke-width="2"/>
 <text x="472" y="28" text-anchor="end" fill="#1d4ed8">coverage (auto-approved / all)</text>
 <text x="472" y="42" text-anchor="end" fill="#dc2626">escape rate (bad auto-approved / all bad)</text>

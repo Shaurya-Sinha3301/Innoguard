@@ -249,15 +249,34 @@ class Style:
 
 STYLES = {
     "classic": Style(
-        "EXPENSE CLAIM", "Employee ID:", "Merchant:", "Date:", "Total INR", "GST", "Card:",
+        "EXPENSE CLAIM",
+        "Employee ID:",
+        "Merchant:",
+        "Date:",
+        "Total INR",
+        "GST",
+        "Card:",
         "Category:",
     ),
     "compact": Style(
-        "Claim + receipt", "Emp:", "Vendor", "Dated", "Amount (Rs.)", "Tax", "Paid by", "Type",
+        "Claim + receipt",
+        "Emp:",
+        "Vendor",
+        "Dated",
+        "Amount (Rs.)",
+        "Tax",
+        "Paid by",
+        "Type",
     ),
     "slip": Style(
-        "Reimbursement slip", "Staff No", "Paid to", "Purchased on", "Amount paid", "VAT/GST",
-        "Paid with", "Expense type",
+        "Reimbursement slip",
+        "Staff No",
+        "Paid to",
+        "Purchased on",
+        "Amount paid",
+        "VAT/GST",
+        "Paid with",
+        "Expense type",
     ),
 }
 

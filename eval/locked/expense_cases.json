@@ -1,0 +1,1521 @@
+{
+  "description": "Locked evaluation set for the expenses pack. Do not tune on it.",
+  "held_out_templates": [
+    "slip"
+  ],
+  "sha256": "22933d1248521cace3f93efadd1180a746952e2aeb4162569279fe433bee5542",
+  "cases": [
+    {
+      "case_id": "clean-000",
+      "index": 200000,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-001",
+      "index": 200001,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-002",
+      "index": 200002,
+      "label": "CLEAN",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "clean-003",
+      "index": 200003,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-004",
+      "index": 200004,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-005",
+      "index": 200005,
+      "label": "CLEAN",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "clean-006",
+      "index": 200006,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-007",
+      "index": 200007,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-008",
+      "index": 200008,
+      "label": "CLEAN",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "clean-009",
+      "index": 200009,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-010",
+      "index": 200010,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-011",
+      "index": 200011,
+      "label": "CLEAN",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "clean-012",
+      "index": 200012,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-013",
+      "index": 200013,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-014",
+      "index": 200014,
+      "label": "CLEAN",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "clean-015",
+      "index": 200015,
+      "label": "CLEAN",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-016",
+      "index": 200016,
+      "label": "CLEAN",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "clean-017",
+      "index": 200017,
+      "label": "CLEAN",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "over_category_cap-000",
+      "index": 201000,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-001",
+      "index": 201001,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-002",
+      "index": 201002,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "over_category_cap-003",
+      "index": 201003,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-004",
+      "index": 201004,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-005",
+      "index": 201005,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "over_category_cap-006",
+      "index": 201006,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-007",
+      "index": 201007,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-008",
+      "index": 201008,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "over_category_cap-009",
+      "index": 201009,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-010",
+      "index": 201010,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-011",
+      "index": 201011,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "over_category_cap-012",
+      "index": 201012,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-013",
+      "index": 201013,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-014",
+      "index": 201014,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "over_category_cap-015",
+      "index": 201015,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-016",
+      "index": 201016,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "over_category_cap-017",
+      "index": 201017,
+      "label": "OVER_CATEGORY_CAP",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "category_blocked-000",
+      "index": 202000,
+      "label": "CATEGORY_BLOCKED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-001",
+      "index": 202001,
+      "label": "CATEGORY_BLOCKED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-002",
+      "index": 202002,
+      "label": "CATEGORY_BLOCKED",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "category_blocked-003",
+      "index": 202003,
+      "label": "CATEGORY_BLOCKED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-004",
+      "index": 202004,
+      "label": "CATEGORY_BLOCKED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-005",
+      "index": 202005,
+      "label": "CATEGORY_BLOCKED",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "category_blocked-006",
+      "index": 202006,
+      "label": "CATEGORY_BLOCKED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-007",
+      "index": 202007,
+      "label": "CATEGORY_BLOCKED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-008",
+      "index": 202008,
+      "label": "CATEGORY_BLOCKED",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "category_blocked-009",
+      "index": 202009,
+      "label": "CATEGORY_BLOCKED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-010",
+      "index": 202010,
+      "label": "CATEGORY_BLOCKED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-011",
+      "index": 202011,
+      "label": "CATEGORY_BLOCKED",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "category_blocked-012",
+      "index": 202012,
+      "label": "CATEGORY_BLOCKED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-013",
+      "index": 202013,
+      "label": "CATEGORY_BLOCKED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-014",
+      "index": 202014,
+      "label": "CATEGORY_BLOCKED",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "category_blocked-015",
+      "index": 202015,
+      "label": "CATEGORY_BLOCKED",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-016",
+      "index": 202016,
+      "label": "CATEGORY_BLOCKED",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "category_blocked-017",
+      "index": 202017,
+      "label": "CATEGORY_BLOCKED",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_card_transaction-000",
+      "index": 203000,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-001",
+      "index": 203001,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-002",
+      "index": 203002,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_card_transaction-003",
+      "index": 203003,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-004",
+      "index": 203004,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-005",
+      "index": 203005,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_card_transaction-006",
+      "index": 203006,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-007",
+      "index": 203007,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-008",
+      "index": 203008,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_card_transaction-009",
+      "index": 203009,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-010",
+      "index": 203010,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-011",
+      "index": 203011,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_card_transaction-012",
+      "index": 203012,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-013",
+      "index": 203013,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-014",
+      "index": 203014,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "no_card_transaction-015",
+      "index": 203015,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-016",
+      "index": 203016,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "no_card_transaction-017",
+      "index": 203017,
+      "label": "NO_CARD_TRANSACTION",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "amount_mismatch-000",
+      "index": 204000,
+      "label": "AMOUNT_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-001",
+      "index": 204001,
+      "label": "AMOUNT_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-002",
+      "index": 204002,
+      "label": "AMOUNT_MISMATCH",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "amount_mismatch-003",
+      "index": 204003,
+      "label": "AMOUNT_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-004",
+      "index": 204004,
+      "label": "AMOUNT_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-005",
+      "index": 204005,
+      "label": "AMOUNT_MISMATCH",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "amount_mismatch-006",
+      "index": 204006,
+      "label": "AMOUNT_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-007",
+      "index": 204007,
+      "label": "AMOUNT_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-008",
+      "index": 204008,
+      "label": "AMOUNT_MISMATCH",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "amount_mismatch-009",
+      "index": 204009,
+      "label": "AMOUNT_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-010",
+      "index": 204010,
+      "label": "AMOUNT_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-011",
+      "index": 204011,
+      "label": "AMOUNT_MISMATCH",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "amount_mismatch-012",
+      "index": 204012,
+      "label": "AMOUNT_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-013",
+      "index": 204013,
+      "label": "AMOUNT_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-014",
+      "index": 204014,
+      "label": "AMOUNT_MISMATCH",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "amount_mismatch-015",
+      "index": 204015,
+      "label": "AMOUNT_MISMATCH",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-016",
+      "index": 204016,
+      "label": "AMOUNT_MISMATCH",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "amount_mismatch-017",
+      "index": 204017,
+      "label": "AMOUNT_MISMATCH",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "wrong_card-000",
+      "index": 205000,
+      "label": "WRONG_CARD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-001",
+      "index": 205001,
+      "label": "WRONG_CARD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-002",
+      "index": 205002,
+      "label": "WRONG_CARD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "wrong_card-003",
+      "index": 205003,
+      "label": "WRONG_CARD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-004",
+      "index": 205004,
+      "label": "WRONG_CARD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-005",
+      "index": 205005,
+      "label": "WRONG_CARD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "wrong_card-006",
+      "index": 205006,
+      "label": "WRONG_CARD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-007",
+      "index": 205007,
+      "label": "WRONG_CARD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-008",
+      "index": 205008,
+      "label": "WRONG_CARD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "wrong_card-009",
+      "index": 205009,
+      "label": "WRONG_CARD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-010",
+      "index": 205010,
+      "label": "WRONG_CARD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-011",
+      "index": 205011,
+      "label": "WRONG_CARD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "wrong_card-012",
+      "index": 205012,
+      "label": "WRONG_CARD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-013",
+      "index": 205013,
+      "label": "WRONG_CARD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-014",
+      "index": 205014,
+      "label": "WRONG_CARD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "wrong_card-015",
+      "index": 205015,
+      "label": "WRONG_CARD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-016",
+      "index": 205016,
+      "label": "WRONG_CARD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "wrong_card-017",
+      "index": 205017,
+      "label": "WRONG_CARD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "unknown_employee-000",
+      "index": 206000,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-001",
+      "index": 206001,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-002",
+      "index": 206002,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "unknown_employee-003",
+      "index": 206003,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-004",
+      "index": 206004,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-005",
+      "index": 206005,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "unknown_employee-006",
+      "index": 206006,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-007",
+      "index": 206007,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-008",
+      "index": 206008,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "unknown_employee-009",
+      "index": 206009,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-010",
+      "index": 206010,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-011",
+      "index": 206011,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "unknown_employee-012",
+      "index": 206012,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-013",
+      "index": 206013,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-014",
+      "index": 206014,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "unknown_employee-015",
+      "index": 206015,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-016",
+      "index": 206016,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "unknown_employee-017",
+      "index": 206017,
+      "label": "UNKNOWN_EMPLOYEE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "date_in_future-000",
+      "index": 207000,
+      "label": "DATE_IN_FUTURE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-001",
+      "index": 207001,
+      "label": "DATE_IN_FUTURE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-002",
+      "index": 207002,
+      "label": "DATE_IN_FUTURE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "date_in_future-003",
+      "index": 207003,
+      "label": "DATE_IN_FUTURE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-004",
+      "index": 207004,
+      "label": "DATE_IN_FUTURE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-005",
+      "index": 207005,
+      "label": "DATE_IN_FUTURE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "date_in_future-006",
+      "index": 207006,
+      "label": "DATE_IN_FUTURE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-007",
+      "index": 207007,
+      "label": "DATE_IN_FUTURE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-008",
+      "index": 207008,
+      "label": "DATE_IN_FUTURE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "date_in_future-009",
+      "index": 207009,
+      "label": "DATE_IN_FUTURE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-010",
+      "index": 207010,
+      "label": "DATE_IN_FUTURE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-011",
+      "index": 207011,
+      "label": "DATE_IN_FUTURE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "date_in_future-012",
+      "index": 207012,
+      "label": "DATE_IN_FUTURE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-013",
+      "index": 207013,
+      "label": "DATE_IN_FUTURE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-014",
+      "index": 207014,
+      "label": "DATE_IN_FUTURE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "date_in_future-015",
+      "index": 207015,
+      "label": "DATE_IN_FUTURE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-016",
+      "index": 207016,
+      "label": "DATE_IN_FUTURE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "date_in_future-017",
+      "index": 207017,
+      "label": "DATE_IN_FUTURE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "claim_too_old-000",
+      "index": 208000,
+      "label": "CLAIM_TOO_OLD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-001",
+      "index": 208001,
+      "label": "CLAIM_TOO_OLD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-002",
+      "index": 208002,
+      "label": "CLAIM_TOO_OLD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "claim_too_old-003",
+      "index": 208003,
+      "label": "CLAIM_TOO_OLD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-004",
+      "index": 208004,
+      "label": "CLAIM_TOO_OLD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-005",
+      "index": 208005,
+      "label": "CLAIM_TOO_OLD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "claim_too_old-006",
+      "index": 208006,
+      "label": "CLAIM_TOO_OLD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-007",
+      "index": 208007,
+      "label": "CLAIM_TOO_OLD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-008",
+      "index": 208008,
+      "label": "CLAIM_TOO_OLD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "claim_too_old-009",
+      "index": 208009,
+      "label": "CLAIM_TOO_OLD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-010",
+      "index": 208010,
+      "label": "CLAIM_TOO_OLD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-011",
+      "index": 208011,
+      "label": "CLAIM_TOO_OLD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "claim_too_old-012",
+      "index": 208012,
+      "label": "CLAIM_TOO_OLD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-013",
+      "index": 208013,
+      "label": "CLAIM_TOO_OLD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-014",
+      "index": 208014,
+      "label": "CLAIM_TOO_OLD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "claim_too_old-015",
+      "index": 208015,
+      "label": "CLAIM_TOO_OLD",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-016",
+      "index": 208016,
+      "label": "CLAIM_TOO_OLD",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "claim_too_old-017",
+      "index": 208017,
+      "label": "CLAIM_TOO_OLD",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_claim-000",
+      "index": 209000,
+      "label": "DUPLICATE_CLAIM",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-001",
+      "index": 209001,
+      "label": "DUPLICATE_CLAIM",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-002",
+      "index": 209002,
+      "label": "DUPLICATE_CLAIM",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_claim-003",
+      "index": 209003,
+      "label": "DUPLICATE_CLAIM",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-004",
+      "index": 209004,
+      "label": "DUPLICATE_CLAIM",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-005",
+      "index": 209005,
+      "label": "DUPLICATE_CLAIM",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_claim-006",
+      "index": 209006,
+      "label": "DUPLICATE_CLAIM",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-007",
+      "index": 209007,
+      "label": "DUPLICATE_CLAIM",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-008",
+      "index": 209008,
+      "label": "DUPLICATE_CLAIM",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_claim-009",
+      "index": 209009,
+      "label": "DUPLICATE_CLAIM",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-010",
+      "index": 209010,
+      "label": "DUPLICATE_CLAIM",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-011",
+      "index": 209011,
+      "label": "DUPLICATE_CLAIM",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_claim-012",
+      "index": 209012,
+      "label": "DUPLICATE_CLAIM",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-013",
+      "index": 209013,
+      "label": "DUPLICATE_CLAIM",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-014",
+      "index": 209014,
+      "label": "DUPLICATE_CLAIM",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_claim-015",
+      "index": 209015,
+      "label": "DUPLICATE_CLAIM",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-016",
+      "index": 209016,
+      "label": "DUPLICATE_CLAIM",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_claim-017",
+      "index": 209017,
+      "label": "DUPLICATE_CLAIM",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-000",
+      "index": 210000,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-001",
+      "index": 210001,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-002",
+      "index": 210002,
+      "label": "DUPLICATE_EXACT",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-003",
+      "index": 210003,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-004",
+      "index": 210004,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-005",
+      "index": 210005,
+      "label": "DUPLICATE_EXACT",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-006",
+      "index": 210006,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-007",
+      "index": 210007,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-008",
+      "index": 210008,
+      "label": "DUPLICATE_EXACT",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-009",
+      "index": 210009,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-010",
+      "index": 210010,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-011",
+      "index": 210011,
+      "label": "DUPLICATE_EXACT",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-012",
+      "index": 210012,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-013",
+      "index": 210013,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-014",
+      "index": 210014,
+      "label": "DUPLICATE_EXACT",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "duplicate_exact-015",
+      "index": 210015,
+      "label": "DUPLICATE_EXACT",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-016",
+      "index": 210016,
+      "label": "DUPLICATE_EXACT",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "duplicate_exact-017",
+      "index": 210017,
+      "label": "DUPLICATE_EXACT",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-000",
+      "index": 211000,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-001",
+      "index": 211001,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-002",
+      "index": 211002,
+      "label": "HIGH_VALUE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-003",
+      "index": 211003,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-004",
+      "index": 211004,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-005",
+      "index": 211005,
+      "label": "HIGH_VALUE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-006",
+      "index": 211006,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-007",
+      "index": 211007,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-008",
+      "index": 211008,
+      "label": "HIGH_VALUE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-009",
+      "index": 211009,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-010",
+      "index": 211010,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-011",
+      "index": 211011,
+      "label": "HIGH_VALUE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-012",
+      "index": 211012,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-013",
+      "index": 211013,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-014",
+      "index": 211014,
+      "label": "HIGH_VALUE",
+      "template": "slip",
+      "split": "held_out"
+    },
+    {
+      "case_id": "high_value-015",
+      "index": 211015,
+      "label": "HIGH_VALUE",
+      "template": "classic",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-016",
+      "index": 211016,
+      "label": "HIGH_VALUE",
+      "template": "compact",
+      "split": "dev"
+    },
+    {
+      "case_id": "high_value-017",
+      "index": 211017,
+      "label": "HIGH_VALUE",
+      "template": "slip",
+      "split": "held_out"
+    }
+  ]
+}

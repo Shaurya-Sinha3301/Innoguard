@@ -1,7 +1,8 @@
-@import "@fontsource/barlow/400.css";
-@import "@fontsource/barlow/500.css";
-@import "@fontsource/barlow/600.css";
-@import "@fontsource/barlow/700.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter-tight/600.css";
+@import "@fontsource/inter-tight/700.css";
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/600.css";
 
@@ -9,44 +10,71 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens: every colour in the UI comes from here.
-   Light only: reviewers work in office daylight. Red is the one utility colour and does
-   one job: it marks what needs a human (exceptions, open counts, the active route). */
-:root {
-  --bg: 0 0% 100%;
-  --ink: 216 12% 8%;
-  --ink-2: 220 13% 33%;
-  --ink-3: 220 9% 44%;
-  --line: 216 14% 87%;
-  --fill: 220 14% 96%;
-  --fill-2: 210 17% 98%;
-  --red: 350 85% 42%;
-  --red-tint: 352 82% 96%;
-  --green: 141 65% 29%;
-  --green-tint: 140 45% 94%;
+/* Design tokens: every colour in the UI comes from here, in a dark and a light set.
+   Yellow (accent) means "this is the action or the selection": the primary button, the
+   active tab, reference chips. Red means "a human has to look at this". The two never swap. */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: 0 0% 4%;
+  --surface: 0 0% 7%;
+  --ink: 0 0% 96%;
+  --ink-2: 0 0% 69%;
+  --ink-3: 0 0% 54%;
+  --line: 0 0% 17%;
+  --fill: 0 0% 11%;
+  --fill-2: 0 0% 9%;
+  --accent: 48 100% 60%;
+  --accent-ink: 0 0% 8%;
+  --accent-tint: 48 60% 14%;
+  --red: 2 88% 66%;
+  --red-tint: 2 45% 15%;
+  --green: 142 55% 56%;
+  --green-tint: 142 32% 14%;
+  --amber: 38 92% 62%;
+  --amber-tint: 38 45% 14%;
+  --radius: 10px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: 45 22% 96%;
+  --surface: 0 0% 100%;
+  --ink: 0 0% 8%;
+  --ink-2: 0 0% 36%;
+  --ink-3: 0 0% 44%;
+  --line: 40 12% 86%;
+  --fill: 40 14% 93%;
+  --fill-2: 40 18% 96%;
+  --accent: 46 100% 53%;
+  --accent-ink: 0 0% 8%;
+  --accent-tint: 46 100% 90%;
+  --red: 350 80% 42%;
+  --red-tint: 352 80% 95%;
+  --green: 141 65% 28%;
+  --green-tint: 140 45% 92%;
   --amber: 36 100% 27%;
-  --amber-tint: 38 85% 94%;
-  --radius: 3px;
+  --amber-tint: 38 85% 92%;
 }
 
 html {
-  font-size: 14px;
+  font-size: 15px;
 }
 
 body {
   @apply bg-bg text-ink antialiased;
-  font-family: "Barlow", system-ui, sans-serif;
-  font-feature-settings: "tnum" 1;
-  caret-color: hsl(var(--red));
+  font-family: "Inter", system-ui, sans-serif;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  caret-color: hsl(var(--accent));
 }
 
 ::selection {
-  background: hsl(var(--red-tint));
+  background: hsl(var(--accent) / 0.35);
   color: hsl(var(--ink));
 }
 
 :focus-visible {
-  outline: 2px solid hsl(var(--ink));
+  outline: 2px solid hsl(var(--accent));
   outline-offset: 2px;
 }
 
@@ -57,6 +85,23 @@ body {
 
 a {
   text-underline-offset: 3px;
+}
+
+input,
+select,
+textarea {
+  background: hsl(var(--fill-2));
+  color: hsl(var(--ink));
+}
+
+/* Small uppercase mono label, the system's way of naming a region. */
+.label-mono {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--ink-2));
 }
 
 @media (prefers-reduced-motion: reduce) {

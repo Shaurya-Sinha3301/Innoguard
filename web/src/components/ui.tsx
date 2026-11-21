@@ -1,5 +1,5 @@
 /** Design-system primitives for the module mosaic. Every style uses the tokens in index.css. */
-import { AlertTriangle, ChevronRight, Inbox } from "lucide-react";
+import { AlertTriangle, ChevronRight, Inbox, type LucideIcon } from "lucide-react";
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { reasonInfo } from "../reasons";
@@ -12,6 +12,7 @@ export function cx(...parts: Array<string | false | null | undefined>) {
 
 type ModuleProps = {
   title: string;
+  icon?: LucideIcon;
   count?: number;
   alert?: boolean;
   action?: { to: string; label: string };
@@ -22,19 +23,28 @@ type ModuleProps = {
   id?: string;
 };
 
-export function Module({ title, count, alert, action, extra, className, bodyClassName, children, id }: ModuleProps) {
+export function IconTile({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-line bg-fill text-ink-2">
+      <Icon className="h-4 w-4" />
+    </span>
+  );
+}
+
+export function Module({ title, icon, count, alert, action, extra, className, bodyClassName, children, id }: ModuleProps) {
   const headingId = id ? `${id}-title` : undefined;
   return (
-    <section aria-labelledby={headingId} className={cx("min-w-0 border border-line bg-bg", className)}>
-      <header className="flex items-center gap-2 border-b border-line bg-fill px-3 py-1.5">
-        <h2 id={headingId} className="text-sm font-semibold">
+    <section aria-labelledby={headingId} className={cx("min-w-0 overflow-hidden rounded-xl border border-line bg-surface", className)}>
+      <header className="flex items-center gap-2.5 border-b border-line px-4 py-3">
+        {icon && <IconTile icon={icon} />}
+        <h2 id={headingId} className="font-display text-md font-semibold tracking-tight">
           {title}
         </h2>
         {count !== undefined && (
           <span
             className={cx(
-              "rounded-sm px-1.5 font-mono text-xs font-semibold",
-              alert && count > 0 ? "bg-red text-bg" : "bg-line text-ink-2",
+              "rounded-full px-2 font-mono text-xs font-semibold",
+              alert && count > 0 ? "bg-red text-bg" : "bg-fill text-ink-2",
             )}
           >
             {count}
@@ -55,26 +65,69 @@ export function Module({ title, count, alert, action, extra, className, bodyClas
   );
 }
 
+/* ---------- Chip: a reference code, like INV-10042, in the accent colour ---------- */
+
+export function Chip({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex whitespace-nowrap rounded-md bg-accent px-1.5 py-0.5 font-mono text-[13px] font-semibold text-accent-ink",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/* ---------- Segmented bar: a row of equal ticks, filled in proportion ---------- */
+
+export function SegmentedBar({
+  value,
+  total,
+  ticks = 24,
+  label,
+  tone = "bg-accent",
+}: {
+  value: number;
+  total: number;
+  ticks?: number;
+  label: string;
+  tone?: string;
+}) {
+  const filled = total > 0 ? Math.round((value / total) * ticks) : 0;
+  return (
+    <div role="img" aria-label={label} className="flex gap-[3px]">
+      {Array.from({ length: ticks }, (_, i) => (
+        <span key={i} className={cx("h-8 flex-1 rounded-[3px]", i < filled ? tone : "bg-fill")} />
+      ))}
+    </div>
+  );
+}
+
 /* ---------- Buttons ---------- */
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
+type Size = "md" | "lg";
 
 const buttonStyles: Record<Variant, string> = {
-  primary: "bg-ink text-bg hover:bg-ink/85",
-  secondary: "border border-line bg-bg text-ink hover:bg-fill",
-  danger: "border border-red/50 bg-bg text-red hover:bg-red-tint",
+  primary: "bg-accent text-accent-ink hover:brightness-95",
+  secondary: "border border-line bg-surface text-ink hover:bg-fill",
+  danger: "border border-red/50 bg-surface text-red hover:bg-red-tint",
   ghost: "text-ink-2 hover:bg-fill hover:text-ink",
 };
 
 export function Button({
   variant = "primary",
+  size = "md",
   className,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: Size }) {
   return (
     <button
       className={cx(
-        "inline-flex h-8 items-center justify-center gap-1.5 rounded px-3 text-sm font-semibold transition-colors",
+        "inline-flex items-center justify-center gap-1.5 font-semibold transition-colors",
+        size === "lg" ? "h-12 rounded-xl px-5 text-md" : "h-9 rounded-lg px-3.5 text-sm",
         "disabled:cursor-not-allowed disabled:opacity-45",
         buttonStyles[variant],
         className,
@@ -99,7 +152,7 @@ const STATUS: Record<string, { label: string; tone: string }> = {
 export function StatusBadge({ status }: { status: string }) {
   const s = STATUS[status] ?? { label: status.replace(/_/g, " ").toLowerCase(), tone: "bg-fill text-ink-2" };
   return (
-    <span className={cx("inline-flex whitespace-nowrap rounded-sm px-1.5 py-px text-xs font-semibold", s.tone)}>
+    <span className={cx("inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold", s.tone)}>
       {s.label}
     </span>
   );
@@ -110,7 +163,7 @@ export function ReasonTag({ code, title }: { code: string; title?: boolean }) {
   return (
     <span
       title={title ? info.explain : undefined}
-      className="inline-flex whitespace-nowrap rounded-sm bg-red-tint px-1.5 py-px text-xs font-medium text-red"
+      className="inline-flex whitespace-nowrap rounded-full bg-red-tint px-2 py-0.5 text-xs font-medium text-red"
     >
       {info.label}
     </span>
@@ -132,7 +185,7 @@ export function Empty({ title, children }: { title: string; children?: ReactNode
 export function ErrorNote({ error }: { error: unknown }) {
   if (!error) return null;
   return (
-    <p role="alert" className="flex items-start gap-2 border border-red/40 bg-red-tint px-3 py-2 text-sm text-red">
+    <p role="alert" className="flex items-start gap-2 rounded-lg border border-red/40 bg-red-tint px-3 py-2 text-sm text-red">
       <AlertTriangle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
       <span>{error instanceof Error ? error.message : String(error)}</span>
     </p>
@@ -166,8 +219,8 @@ export function Table({ children, label }: { children: ReactNode; label: string 
 }
 
 export const th =
-  "whitespace-nowrap border-b border-line bg-fill-2 px-3 py-1.5 text-left text-xs font-semibold text-ink-2";
-export const td = "whitespace-nowrap border-b border-line/70 px-3 py-1.5 align-middle";
+  "label-mono whitespace-nowrap border-b border-line bg-fill-2 px-4 py-2 text-left font-medium";
+export const td = "whitespace-nowrap border-b border-line/70 px-4 py-2.5 align-middle";
 export const num = "text-right font-mono text-[13px] tabular-nums";
 
 export function Row({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
@@ -198,8 +251,8 @@ export function Segmented<T extends string>({
             aria-pressed={on}
             onClick={() => onChange(o.value)}
             className={cx(
-              "inline-flex h-7 items-center gap-1 rounded-sm border px-2 text-xs font-medium",
-              on ? "border-ink bg-ink text-bg" : "border-line bg-bg text-ink-2 hover:bg-fill",
+              "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium",
+              on ? "border-accent bg-accent text-accent-ink" : "border-line bg-surface text-ink-2 hover:bg-fill",
             )}
           >
             {o.label}

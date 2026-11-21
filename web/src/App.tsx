@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, FileStack, Files, LogOut, ShieldCheck, TriangleAlert, Upload as UploadIcon } from "lucide-react";
+import { BarChart3, FileStack, Files, LogOut, Moon, ShieldCheck, Sun, TriangleAlert, Upload as UploadIcon } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { API_URL, api, ApiError, getApiKey, setApiKey } from "./api";
@@ -15,8 +15,49 @@ const DEMO_HINT: string | undefined = import.meta.env.VITE_DEMO_HINT;
 
 function SyntheticLabel() {
   return (
-    <span className="whitespace-nowrap rounded-sm bg-amber-tint px-1.5 py-px text-xs font-semibold text-amber">
+    <span className="whitespace-nowrap rounded-full bg-amber-tint px-2 py-0.5 text-xs font-semibold text-amber">
       Synthetic demo data
+    </span>
+  );
+}
+
+function useTheme() {
+  const [theme, setTheme] = useState<"dark" | "light">(
+    () => (document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark"),
+  );
+  function toggle() {
+    const next = theme === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try {
+      localStorage.setItem("invoiceguard.theme", next);
+    } catch {
+      /* not persisted; applies for this visit */
+    }
+    setTheme(next);
+  }
+  return { theme, toggle };
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  const Icon = theme === "dark" ? Sun : Moon;
+  return (
+    <Button variant="ghost" onClick={toggle} aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}>
+      <Icon aria-hidden className="h-4 w-4" />
+    </Button>
+  );
+}
+
+function Brand() {
+  return (
+    <span className="inline-flex items-center gap-2.5">
+      <span aria-hidden className="grid h-9 w-9 place-items-center rounded-full bg-accent text-accent-ink">
+        <ShieldCheck className="h-5 w-5" />
+      </span>
+      <span className="leading-tight">
+        <span className="block font-display text-md font-bold tracking-tight">InvoiceGuard</span>
+        <span className="label-mono block">Accounts payable</span>
+      </span>
     </span>
   );
 }
@@ -53,8 +94,13 @@ function SignIn({ onSignIn }: { onSignIn: () => void }) {
   }
 
   return (
-    <main className="mx-auto mt-24 max-w-sm px-4">
-      <Module title="Sign in to InvoiceGuard" bodyClassName="space-y-3 p-4">
+    <main className="mx-auto mt-20 max-w-md px-4">
+      <div className="mb-6 flex items-center justify-between">
+        <Brand />
+        <ThemeToggle />
+      </div>
+      <h1 className="mb-4 font-display text-2xl font-bold tracking-tight">Sign in</h1>
+      <Module title="Reviewer access" bodyClassName="space-y-3 p-4">
         <p className="text-sm text-ink-2">
           Reviewers sign in with their API key. Every decision is recorded under the name the key belongs to.
         </p>
@@ -74,10 +120,10 @@ function SignIn({ onSignIn }: { onSignIn: () => void }) {
             autoComplete="off"
             value={key}
             onChange={(e) => setKey(e.target.value)}
-            className="h-9 w-full rounded border border-line px-2.5 font-mono text-sm"
+            className="h-10 w-full rounded-lg border border-line px-3 font-mono text-sm"
             autoFocus
           />
-          <Button type="submit" className="w-full" disabled={!key.trim() || checking}>
+          <Button type="submit" size="lg" className="w-full" disabled={!key.trim() || checking}>
             {checking ? "Checking…" : "Sign in"}
           </Button>
           <ErrorNote error={error} />
@@ -96,15 +142,15 @@ function NavTab({ to, icon: Icon, label, count, alert }: { to: string; icon: typ
       end
       className={({ isActive }) =>
         cx(
-          "-mb-px inline-flex h-10 shrink-0 items-center gap-1.5 border-b-2 px-3 text-sm font-semibold",
-          isActive ? "border-red text-red" : "border-transparent text-ink-2 hover:text-ink",
+          "-mb-px inline-flex h-12 shrink-0 items-center gap-1.5 border-b-2 px-3.5 text-sm font-medium",
+          isActive ? "border-accent text-ink" : "border-transparent text-ink-2 hover:text-ink",
         )
       }
     >
       <Icon aria-hidden className="h-4 w-4" />
       {label}
       {count !== undefined && count > 0 && (
-        <span className={cx("rounded-sm px-1.5 font-mono text-xs", alert ? "bg-red text-bg" : "bg-fill text-ink-2")}>
+        <span className={cx("rounded-full px-1.5 font-mono text-xs", alert ? "bg-red text-bg" : "bg-fill text-ink-2")}>
           {count}
         </span>
       )}
@@ -121,30 +167,35 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
   return (
     <div className="min-h-screen">
       <header className="border-b border-line">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2">
-          <span className="inline-flex items-center gap-1.5 text-md font-bold tracking-tight">
-            <ShieldCheck aria-hidden className="h-5 w-5 text-ink" />
-            InvoiceGuard
-          </span>
-          <span className="hidden text-xs text-ink-2 sm:inline">Accounts payable · three-way match</span>
-          <div className="ml-auto flex items-center gap-3">
-            <SyntheticLabel />
-            {me.data && <span className="text-sm text-ink-2">Signed in as <b className="text-ink">{me.data.name}</b></span>}
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-1 px-5">
+          <div className="py-3">
+            <Brand />
+          </div>
+          <nav aria-label="Main" className="order-last -mx-2 flex w-full overflow-x-auto md:order-none md:mx-0 md:w-auto">
+            <NavTab to="/review" icon={TriangleAlert} label="Review queue" count={review} alert />
+            <NavTab to="/invoices" icon={Files} label="All invoices" />
+            <NavTab to="/failed" icon={FileStack} label="Failed jobs" count={failed} alert />
+            <NavTab to="/metrics" icon={BarChart3} label="Metrics" />
+            <NavTab to="/upload" icon={UploadIcon} label="Upload" />
+          </nav>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="hidden lg:inline">
+              <SyntheticLabel />
+            </span>
+            {me.data && (
+              <span className="hidden text-sm text-ink-2 sm:inline">
+                <b className="font-semibold text-ink">{me.data.name}</b>
+              </span>
+            )}
+            <ThemeToggle />
             <Button variant="ghost" onClick={onSignOut} aria-label="Sign out">
               <LogOut aria-hidden className="h-4 w-4" />
               <span className="hidden sm:inline">Sign out</span>
             </Button>
           </div>
         </div>
-        <nav aria-label="Main" className="mx-auto flex max-w-[1600px] overflow-x-auto px-2">
-          <NavTab to="/review" icon={TriangleAlert} label="Review queue" count={review} alert />
-          <NavTab to="/invoices" icon={Files} label="All invoices" />
-          <NavTab to="/failed" icon={FileStack} label="Failed jobs" count={failed} alert />
-          <NavTab to="/metrics" icon={BarChart3} label="Metrics" />
-          <NavTab to="/upload" icon={UploadIcon} label="Upload" />
-        </nav>
       </header>
-      <main className="mx-auto max-w-[1600px] px-4 py-3">
+      <main className="mx-auto max-w-[1600px] px-5 py-6">
         <Routes>
           <Route path="/" element={<Navigate to="/review" replace />} />
           <Route path="/review" element={<ReviewDesk />} />

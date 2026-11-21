@@ -14,7 +14,7 @@ export default function FailedJobs() {
   });
 
   return (
-    <div className="grid gap-2 lg:grid-cols-12">
+    <div className="grid gap-4 lg:grid-cols-12">
       <Module title="Failed jobs" count={jobs.data?.length} alert className="lg:col-span-9">
         <ErrorNote error={jobs.error ?? replay.error} />
         {jobs.isLoading && <SkeletonRows rows={4} cols={5} />}

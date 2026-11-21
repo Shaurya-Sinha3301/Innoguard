@@ -30,7 +30,7 @@ export default function Upload() {
   }
 
   return (
-    <div className="grid gap-2 lg:grid-cols-12">
+    <div className="grid gap-4 lg:grid-cols-12">
       <Module title="Upload an invoice" className="lg:col-span-7" bodyClassName="space-y-3 p-3">
         <div
           onDragOver={(e) => {
@@ -45,7 +45,7 @@ export default function Upload() {
           }}
           className={cx(
             "flex flex-col items-center gap-2 border border-dashed px-4 py-8 text-center",
-            dragging ? "border-ink bg-fill" : "border-line",
+            dragging ? "border-accent bg-fill" : "border-line",
           )}
         >
           <FileUp aria-hidden className="h-6 w-6 text-ink-2" />

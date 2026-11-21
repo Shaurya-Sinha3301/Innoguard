@@ -13,7 +13,7 @@ export default function Metrics() {
   const max = Math.max(1, ...m.exceptions.map((e) => e.count));
 
   return (
-    <div className="grid gap-2 lg:grid-cols-12">
+    <div className="grid gap-4 lg:grid-cols-12">
       <p className="border border-amber/40 bg-amber-tint px-3 py-1.5 text-sm text-amber lg:col-span-12">
         Operational figures from this system's own event log, on synthetic demo data. They are not accuracy results;
         accuracy is measured by the evaluation harness against known answers.

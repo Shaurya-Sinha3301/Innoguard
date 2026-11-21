@@ -1,5 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, ExternalLink } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Boxes,
+  Cpu,
+  ExternalLink,
+  FileText,
+  Flag,
+  Gavel,
+  History,
+  ScanText,
+  UserCheck,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, type AuditEvent, type InvoiceDetail } from "../api";
@@ -32,7 +45,7 @@ function ThreeWayMatch({ inv }: { inv: InvoiceDetail }) {
   return (
     <>
       {!po && inv.po_number && (
-        <p className="flex items-center gap-2 border-b border-line bg-red-tint px-3 py-1.5 text-sm text-red">
+        <p className="flex items-center gap-2 border-b border-line bg-red-tint px-4 py-2 text-sm text-red">
           <AlertTriangle aria-hidden className="h-4 w-4" />
           No purchase order on file for <span className="font-mono">{inv.po_number}</span>.
         </p>
@@ -95,7 +108,7 @@ function ThreeWayMatch({ inv }: { inv: InvoiceDetail }) {
           ))}
         </tfoot>
       </Table>
-      <p className="px-3 py-1.5 text-xs text-ink-2">
+      <p className="px-4 py-2 text-xs text-ink-2">
         Highlighted cells disagree. Price tolerance 2%; quantities must match exactly. Received sums {inv.receipt_count}{" "}
         goods receipt{inv.receipt_count === 1 ? "" : "s"} on {po?.po_number ?? inv.po_number ?? "the PO"}.
       </p>
@@ -173,7 +186,7 @@ function Decision({ inv }: { inv: InvoiceDetail }) {
   const validTotal = /^\d+(\.\d{1,4})?$/.test(total);
 
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-4 p-4">
       <ErrorNote error={error} />
       {editable && (
         <div className="space-y-1">
@@ -186,23 +199,23 @@ function Decision({ inv }: { inv: InvoiceDetail }) {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="For example: price increase agreed with the supplier on 12 Nov"
-            className="w-full resize-y rounded border border-line px-2.5 py-1.5 text-sm placeholder:text-ink-3"
+            className="w-full resize-y rounded-lg border border-line px-3 py-2 text-sm placeholder:text-ink-3"
           />
         </div>
       )}
       {reviewable && (
         <div className="flex flex-wrap gap-2">
-          <Button disabled={!hasReason || busy} onClick={() => approve.mutate()}>
+          <Button size="lg" disabled={!hasReason || busy} onClick={() => approve.mutate()}>
             Approve version {inv.version}
           </Button>
-          <Button variant="danger" disabled={!hasReason || busy} onClick={() => reject.mutate()}>
+          <Button size="lg" variant="danger" disabled={!hasReason || busy} onClick={() => reject.mutate()}>
             Reject
           </Button>
         </div>
       )}
       {postable && (
         <div className="space-y-1">
-          <Button disabled={busy} onClick={() => post.mutate()}>
+          <Button size="lg" disabled={busy} onClick={() => post.mutate()}>
             Post to system of record
           </Button>
           <p className="text-xs text-ink-2">Posting is idempotent: a second attempt is recorded and does nothing.</p>
@@ -233,7 +246,7 @@ function Decision({ inv }: { inv: InvoiceDetail }) {
                 inputMode="decimal"
                 value={total}
                 onChange={(e) => setTotal(e.target.value)}
-                className="mt-1 block h-8 w-36 rounded border border-line px-2 font-mono text-sm"
+                className="mt-1 block h-9 w-36 rounded-lg border border-line px-2 font-mono text-sm"
               />
             </label>
             <Button variant="secondary" disabled={!hasReason || !validTotal || busy} onClick={() => edit.mutate()}>
@@ -267,8 +280,8 @@ function DocumentPreview({ id }: { id: string }) {
   if (!url) return <SkeletonRows rows={6} cols={1} />;
   return (
     <div>
-      <iframe title="Invoice PDF" src={url} className="h-[560px] w-full" />
-      <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-1 border-t border-line px-3 py-1.5 text-sm hover:underline">
+      <iframe title="Invoice PDF" src={url} className="h-[560px] w-full bg-white" />
+      <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-1 border-t border-line px-4 py-2.5 text-sm hover:underline">
         <ExternalLink aria-hidden className="h-3.5 w-3.5" /> Open the PDF in a new tab
       </a>
     </div>
@@ -315,6 +328,11 @@ function AuditTrail({ inv }: { inv: InvoiceDetail }) {
 export default function InvoiceDetailPage() {
   const { id = "" } = useParams();
   const invoice = useQuery({ queryKey: ["invoice", id], queryFn: () => api.invoice(id), refetchInterval: 4000 });
+  const queue = useQuery({ queryKey: ["invoices", "NEEDS_REVIEW"], queryFn: () => api.listInvoices("NEEDS_REVIEW") });
+  // The next invoice after this one in the oldest-first queue, if this one is in it.
+  const ordered = [...(queue.data ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const at = ordered.findIndex((r) => r.id === id);
+  const nextId = ordered.find((r, i) => r.id !== id && i > at)?.id ?? null;
 
   if (invoice.error) return <ErrorNote error={invoice.error} />;
   if (!invoice.data) return <SkeletonRows rows={12} cols={4} />;
@@ -323,25 +341,52 @@ export default function InvoiceDetailPage() {
   const reviewing = inv.status === "NEEDS_REVIEW";
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border border-line bg-fill-2 px-3 py-2">
-        <Link to="/review" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink">
-          <ArrowLeft aria-hidden className="h-4 w-4" /> Queue
-        </Link>
-        <h1 className="break-all font-mono text-lg font-semibold">{inv.invoice_number ?? "Uploaded document"}</h1>
-        <StatusBadge status={inv.status} />
-        <dl className="flex flex-wrap gap-x-4 text-sm text-ink-2">
-          <div className="flex gap-1"><dt>Vendor</dt><dd className="font-mono text-ink">{inv.vendor_id ?? "—"}</dd></div>
-          <div className="flex gap-1"><dt>PO</dt><dd className="font-mono text-ink">{inv.po_number ?? "—"}</dd></div>
-          <div className="flex gap-1"><dt>Total</dt><dd className="font-mono text-ink">{inv.currency} {money(inv.total)}</dd></div>
-          <div className="flex gap-1"><dt>Version</dt><dd className="font-mono text-ink">{inv.version}</dd></div>
-          <div className="flex gap-1"><dt>Received</dt><dd className="text-ink">{when(inv.created_at)}</dd></div>
-        </dl>
-      </div>
+    <div className="space-y-4">
+      <Link to="/review" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink">
+        <ArrowLeft aria-hidden className="h-4 w-4" /> Back to the queue
+      </Link>
+
+      <section aria-label="Invoice summary" className="flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-line bg-surface p-6">
+        <div className="min-w-0">
+          <p className="label-mono">Invoice</p>
+          <h1 className="mt-1 break-all font-display text-2xl font-bold tracking-tight">
+            {inv.invoice_number ?? "Uploaded document"}
+          </h1>
+          <ul className="mt-3 flex flex-wrap gap-2 text-sm">
+            {[
+              ["Vendor", inv.vendor_id ?? "—"],
+              ["PO", inv.po_number ?? "—"],
+              ["Version", String(inv.version)],
+              ["Received", when(inv.created_at)],
+            ].map(([k, v]) => (
+              <li key={k} className="rounded-lg border border-line px-3 py-1">
+                <span className="text-ink-2">{k}</span> <span className="font-mono text-[13px]">{v}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-xl border border-line bg-fill-2 p-4 sm:min-w-64">
+          <div className="flex items-center justify-between gap-3">
+            <p className="label-mono">Total</p>
+            <StatusBadge status={inv.status} />
+          </div>
+          <p className="mt-2 font-display text-xl font-bold tracking-tight">
+            <span className="text-ink-3">{inv.currency}</span> {money(inv.total)}
+          </p>
+          {nextId && (
+            <Link
+              to={`/invoices/${nextId}`}
+              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline"
+            >
+              Next in queue <ArrowRight aria-hidden className="h-4 w-4" />
+            </Link>
+          )}
+        </div>
+      </section>
 
       {reasons.length > 0 && (
-        <Module title={reviewing ? "Why it needs your decision" : "Why it was flagged"} count={reasons.length} alert={reviewing}>
-          <ul className="grid gap-x-4 gap-y-1 px-3 py-2 sm:grid-cols-2">
+        <Module icon={Flag} title={reviewing ? "Why it needs your decision" : "Why it was flagged"} count={reasons.length} alert={reviewing}>
+          <ul className="grid gap-x-6 gap-y-2 px-4 py-3 sm:grid-cols-2">
             {reasons.map((r) => (
               <li key={r} className="flex items-start gap-2 text-sm">
                 <ReasonTag code={r} />
@@ -352,32 +397,32 @@ export default function InvoiceDetailPage() {
         </Module>
       )}
 
-      <div className="grid gap-2 lg:grid-cols-12">
-        <Module title="Three-way match" className="lg:col-span-8" extra={<span className="font-mono text-xs text-ink-2">{inv.purchase_order?.po_number ?? ""}</span>}>
+      <div className="grid items-start gap-4 lg:grid-cols-12">
+        <Module icon={Boxes} title="Three-way match" className="lg:col-span-8" extra={<span className="font-mono text-xs text-ink-2">{inv.purchase_order?.po_number ?? ""}</span>}>
           <ThreeWayMatch inv={inv} />
         </Module>
-        <Module title="Decision" className="lg:col-span-4">
+        <Module icon={Gavel} title="Decision" className="lg:col-span-4">
           <Decision inv={inv} />
         </Module>
 
-        <Module title="Read from the document" className="lg:col-span-7">
+        <Module icon={ScanText} title="Read from the document" className="lg:col-span-7">
           <Evidence id={id} />
         </Module>
-        <Module title="Document" className="lg:col-span-5">
+        <Module icon={FileText} title="Document" className="lg:col-span-5">
           <DocumentPreview id={id} />
         </Module>
 
-        <Module title="Audit trail" count={inv.timeline.length} className="lg:col-span-8" extra={inv.trace_id ? <span className="font-mono text-xs text-ink-2">trace {inv.trace_id.slice(0, 8)}</span> : null}>
+        <Module icon={History} title="Audit trail" count={inv.timeline.length} className="lg:col-span-8" extra={inv.trace_id ? <span className="font-mono text-xs text-ink-2">trace {inv.trace_id.slice(0, 8)}</span> : null}>
           <AuditTrail inv={inv} />
         </Module>
-        <div className="space-y-2 lg:col-span-4">
-          <Module title="Approvals" count={inv.approvals.length}>
+        <div className="space-y-4 lg:col-span-4">
+          <Module icon={UserCheck} title="Approvals" count={inv.approvals.length}>
             {inv.approvals.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-ink-2">No approvals yet.</p>
+              <p className="px-4 py-3 text-sm text-ink-2">No approvals yet.</p>
             ) : (
               <ul className="divide-y divide-line">
                 {inv.approvals.map((a, i) => (
-                  <li key={i} className="px-3 py-1.5 text-sm">
+                  <li key={i} className="px-4 py-2.5 text-sm">
                     <span className="font-semibold">{humanize(a.decision)}</span> by {a.reviewer} · v{a.invoice_version} ·{" "}
                     <span className="font-mono text-[13px]">{money(a.amount)}</span>
                     {a.invoice_version !== inv.version && <span className="ml-1 text-xs font-semibold text-red">void, older version</span>}
@@ -387,13 +432,13 @@ export default function InvoiceDetailPage() {
               </ul>
             )}
           </Module>
-          <Module title="Model calls" count={inv.llm_calls.length}>
+          <Module icon={Cpu} title="Model calls" count={inv.llm_calls.length}>
             {inv.llm_calls.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-ink-2">No model calls for this invoice.</p>
+              <p className="px-4 py-3 text-sm text-ink-2">No model calls for this invoice.</p>
             ) : (
               <ul className="divide-y divide-line">
                 {inv.llm_calls.map((c, i) => (
-                  <li key={i} className="flex flex-wrap justify-between gap-x-3 px-3 py-1.5 text-sm">
+                  <li key={i} className="flex flex-wrap justify-between gap-x-3 px-4 py-2.5 text-sm">
                     <span>
                       {c.model}
                       {isSimulated(c.provider) && <span className="ml-1 text-xs font-semibold text-amber">simulated</span>}

@@ -25,9 +25,9 @@ approval from a person.
 | Review UI redesign (dark/light, two-pane desk, card-based case page, toasts, keyboard flow) | Built |
 | Pack layer: manifest schema, invoice manifest, `GET /packs`, UI reads reasons and tolerances from it | Built |
 | Auth: scoped principals, hashed agent keys, bearer tokens, admin API, Connections page | Built |
-| Core made case-based (`cases` migration, `/cases` API) | Next |
-| Second pack: expense reports | Planned |
-| Remote MCP server with posting grants | Planned |
+| Core made case-based (`invoices` table became `cases` with a `pack_id`) | Built |
+| Remote MCP server at `/mcp`: scoped tools, agent suggestions, per-case posting grants | Built |
+| Second pack: expense reports | Next |
 | OAuth sign-in for MCP clients | Planned |
 | Credit notes, multi-currency, near-duplicates, calibration, tracing export, worker scaling | Planned |
 
@@ -95,7 +95,7 @@ flowchart TB
     R -->|API key| UI[Review UI<br/>React, Vercel]
     AD -->|API key, admin scope| UI
     UI -->|HTTPS, X-API-Key| API
-    CD -->|Bearer key, later OAuth| MCP[MCP server<br/>planned]
+    CD -->|Bearer key, later OAuth| MCP[MCP server<br/>/mcp]
     OT -->|Bearer key, later OAuth| MCP
 
     subgraph InvoiceGuard
@@ -185,14 +185,16 @@ erDiagram
     purchase_orders ||--o{ po_lines : contains
     purchase_orders ||--o{ goods_receipts : "received against"
     goods_receipts ||--o{ receipt_lines : contains
-    invoices ||--o{ invoice_lines : contains
-    invoices ||--o| documents : "source file"
-    invoices ||--o{ extraction_fields : "read values + evidence"
-    invoices ||--o{ approvals : "bound to version + amount"
-    invoices ||--o{ postings : "unique idempotency key"
-    invoices ||--o{ llm_calls : "cost and latency"
-    invoices ||--o{ failed_jobs : "dead letter"
-    invoices ||--o{ audit_events : "append-only"
+    cases ||--o{ case_lines : contains
+    cases ||--o| documents : "source file"
+    cases ||--o{ extraction_fields : "read values + evidence"
+    cases ||--o{ approvals : "bound to version + amount"
+    cases ||--o{ postings : "unique idempotency key"
+    cases ||--o{ llm_calls : "cost and latency"
+    cases ||--o{ failed_jobs : "dead letter"
+    cases ||--o{ audit_events : "append-only"
+    cases ||--o{ suggestions : "agent proposals"
+    cases ||--o{ posting_grants : "one-use release for an agent"
     principals {
         uuid id
         text name
@@ -201,6 +203,20 @@ erDiagram
         text_array packs
         text key_hash "SHA-256 only"
         bool disabled
+    }
+    cases {
+        uuid id
+        text pack_id "which workflow owns it"
+        jsonb data "pack-specific fields"
+        text status
+        int version
+    }
+    posting_grants {
+        uuid id
+        int case_version
+        numeric amount
+        timestamptz expires_at
+        timestamptz used_at
     }
     outbox {
         bigint id
@@ -221,7 +237,8 @@ Invariants the database itself enforces:
 | Invariant | Mechanism |
 | --- | --- |
 | Audit events are never changed or removed | Trigger rejects `UPDATE`, `DELETE`, `TRUNCATE` on `audit_events` |
-| A posting happens once per (invoice, version, amount) | Unique constraint on `postings.idempotency_key` |
+| A posting happens once per (case, version, amount) | Unique constraint on `postings.idempotency_key` |
+| A grant is spent at most once | One atomic `UPDATE ... WHERE used_at IS NULL AND not expired AND version and amount match` |
 | Agent keys are not recoverable from a leak | Only `key_hash` (SHA-256) is stored; the key is shown once |
 | Schema equals models | A test applies every migration and fails on any drift from the models |
 
@@ -376,10 +393,53 @@ next request.
 | `POST /invoices/{id}/replay` | `review` | Re-run extraction for a failed case |
 | `POST /invoices/{id}/post` | `post` | Post an approved case |
 | `GET /failed-jobs`, `GET /metrics/summary` | `read` | Operations and metrics |
+| `GET/POST /invoices/{id}/suggestions` | `read` / `propose` | Agent suggestions on a case |
+| `POST /invoices/{id}/suggestions/{sid}/dismiss` | `review` | A person dismisses a suggestion |
+| `GET/POST /invoices/{id}/grants` | `read` / `review` | List grants; a person releases an approved case for an agent to post |
 | `GET/POST /principals`, `POST /principals/{id}/disable` | `admin` | Manage keys |
+| `POST /mcp` (streamable HTTP) | bearer key | The MCP server, see below |
+
+An agent key cannot call `POST /invoices/{id}/post` at all: agents post through the MCP
+`post_case` tool, with a grant.
 
 Writes are rate limited per key (fixed window in Redis, fails open if Redis is down) and can
 be paused for the whole deployment with `WRITES_ENABLED=false`.
+
+### MCP server and posting grants
+
+The MCP server is mounted inside the API at `/mcp` (streamable HTTP, stateless, so it runs on
+the same free web service). Every request carries a bearer token. `ApiKeyVerifier` resolves it
+to the same `Principal` the REST API uses; an OAuth verifier will replace it behind the same
+interface. The tools call the same services as the UI.
+
+| Tool | Scope | Changes state? |
+| --- | --- | --- |
+| `list_packs_available`, `describe_pack`, `list_cases`, `get_case`, `get_audit`, `lookup` | `read` | No (database-enforced read-only transaction) |
+| `submit_document` | `submit` | Creates a case and queues extraction |
+| `propose_decision` | `propose` | Stores a suggestion only |
+| `post_case` | `post` | Posts, but only with a valid grant |
+
+There is no approve, reject or edit tool, and a test fails if one is ever added.
+
+```mermaid
+sequenceDiagram
+    participant A as Agent (MCP)
+    participant P as Person (UI)
+    participant S as Service
+    P->>S: approve (version 3, amount 906.14)
+    P->>S: release for posting, valid 15 minutes
+    S-->>P: grant (case, version 3, amount, expiry)
+    P-->>A: grant id
+    A->>S: post_case(case, grant)
+    S->>S: lock row; spend grant atomically; post once
+    S-->>A: POSTED
+```
+
+A grant is bound to the version and amount it was issued for, expires within 5 to 60
+minutes, and is spent by its first use (atomic `UPDATE ... WHERE used_at IS NULL`). Editing
+the case afterwards voids it. If posting fails, the transaction rolls back and the grant is
+not spent. Every tool call and every grant event is audited under `mcp:<agent>`. See
+[docs/mcp.md](docs/mcp.md).
 
 ### Packs (how a workflow is described)
 
@@ -421,12 +481,15 @@ and that the manifest's numbers equal the ones the code uses.
 | Duplicate task delivery | The extraction job finds the case already past extraction and stops |
 | Stale browser tab approves an old version | `expected_version` mismatch returns 409 |
 | Agent key leaked | Disable the principal; its next request is refused |
+| Agent and a person act on the same case | Distinct actors in the audit log (`mcp:<agent>` versus the reviewer's name) |
+| Two agents use one grant at once | One posts; the rest are refused; exactly one posting row |
 
 ## Security model
 
 | Threat | Control |
 | --- | --- |
-| An agent approves or pays something | Agent keys cannot hold `review` or `admin`; checked at creation and every request |
+| An agent approves or pays something | Agent keys cannot hold `review` or `admin`; no approve tool exists; posting needs a person's one-use grant |
+| An agent posts something a person did not release | The grant is bound to case, version and amount; edits void it |
 | A document instructs the model to approve | The model never decides; evidence check, arithmetic and policy are code |
 | Key theft from a database leak | Only SHA-256 hashes stored; keys shown once |
 | Key leaked in logs or errors | Connection strings and secrets are hidden from validation errors |
@@ -492,9 +555,9 @@ outside agents work through it safely.
 | --- | --- | --- |
 | Pack layer | Manifest schema, `/packs`, UI driven by the manifest | Built |
 | Auth | Scoped principals, hashed agent keys, bearer tokens, admin API, Connections page | Built |
-| Core made generic | `invoices` becomes `cases` with a pack id; `/cases` API; `/invoices` kept as an alias | Next |
-| Expense-report pack | Receipt vs card transaction vs policy; same core, no pack-specific branches | Planned |
-| Remote MCP server | Streamable HTTP at `/mcp`; tools to list, read, submit, propose; posting only with a short-lived per-case grant a person issues | Planned |
+| Core made case-based | `invoices` became `cases` with `pack_id` and `data`; HTTP routes under `/invoices` unchanged | Built |
+| Remote MCP server | Streamable HTTP at `/mcp`; list, read, submit, propose; posting only with a short-lived per-case grant a person issues | Built |
+| Expense-report pack | Receipt vs card transaction vs policy; same core, no pack-specific branches | Next |
 | OAuth for MCP clients | Resource-server only; the API-key verifier is the interim | Planned |
 | Credit notes, multi-currency | Netting, returns, rate date and tolerance | Planned |
 | Near-duplicate detection | Normalised amount, date, PO and lines as a review signal | Planned |
@@ -511,7 +574,7 @@ outside agents work through it safely.
 | `backend/src/invoiceguard/extraction` | Model clients, normaliser, evidence check, cost metrics |
 | `backend/src/invoiceguard/jobs` | Outbox, dispatcher, extraction job, dead letter and replay |
 | `backend/src/invoiceguard/api` | Routes, auth and scopes, rate limits |
-| `backend/src/invoiceguard/mcp_server` | Read-only MCP tools (stdio) |
+| `backend/src/invoiceguard/mcp_server` | Remote and stdio MCP server, token verifier, tools |
 | `backend/src/invoiceguard/evaluation` | Locked set, simulated errors, runner and gates |
 | `backend/alembic` | Migrations |
 | `web/` | React review UI |
@@ -520,6 +583,7 @@ outside agents work through it safely.
 
 ## Documents
 
+- [Connecting an agent (MCP)](docs/mcp.md)
 - [Architecture and trade-offs](docs/architecture.md)
 - [Deployment](docs/deploy.md)
 - [Runbook](docs/runbook.md)
@@ -532,7 +596,10 @@ outside agents work through it safely.
 - Synthetic data only, and a Postgres database stands in for the ERP. No claim of
   ERP-grade compliance or production readiness.
 - Clean PDFs only; no scanned or handwritten invoices yet.
-- Reviewer identity is a static API key; there is no SSO yet.
+- Reviewer identity is a static API key and agent keys are issued keys; there is no SSO or
+  OAuth yet. MCP clients that only support browser sign-in cannot connect.
+- Only the invoices pack is exposed. The data model and manifest are pack-ready; the second
+  pack (expense reports) is not built.
 - No posting reversal; a wrong posting is handled outside the system (see the runbook).
 - The model's confidence is self-reported and uncalibrated; the evidence check is the
   independent control.

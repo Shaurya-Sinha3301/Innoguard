@@ -33,7 +33,7 @@ from mcp.types import ToolAnnotations
 from sqlalchemy import select
 
 from invoiceguard.api import ratelimit
-from invoiceguard.api.auth import Principal, all_pack_ids, authenticate
+from invoiceguard.api.auth import SESSION_PREFIX, Principal, all_pack_ids, authenticate
 from invoiceguard.config import settings
 from invoiceguard.db import models as m
 from invoiceguard.db import session as db
@@ -69,6 +69,8 @@ class ApiKeyVerifier:
 
     async def verify_token(self, token: str) -> AccessToken | None:
         def check() -> Principal | None:
+            if token.startswith(SESSION_PREFIX):
+                return None  # a browser session is not an agent credential
             with _sessions()() as session:
                 principal = authenticate(session, token)
                 session.commit()

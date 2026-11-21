@@ -408,3 +408,29 @@ def test_metrics_can_be_scoped_to_a_pack(client, session_factory):
     assert "AUTO_APPROVED" not in only["invoices_by_status"]
     assert only["invoices_by_status"]["NEEDS_REVIEW"] == 1
     assert only["decisions"]["decided"] == 1
+
+
+# ------------------------------------------------------------------ people and their keys
+
+
+def test_a_browser_session_is_not_an_agent_credential_but_a_key_a_person_made_is(client):
+    signup = client.post(
+        "/auth/signup",
+        json={"email": "asha@example.com", "name": "Asha", "password": "correct horse battery"},
+    )
+    session_token = signup.json()["token"]
+    headers = {"Accept": "application/json, text/event-stream"}
+    refused = client.post(
+        "/mcp",
+        headers={**headers, "Authorization": f"Bearer {session_token}"},
+        json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+    )
+    assert refused.status_code == 401
+
+    made = client.post(
+        "/me/keys",
+        headers={"Authorization": f"Bearer {session_token}"},
+        json={"label": "claude", "scopes": ["read"]},
+    )
+    is_error, rows = call(client, made.json()["key"], "list_cases", pack="invoices")
+    assert not is_error and isinstance(rows, list)

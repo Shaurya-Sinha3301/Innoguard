@@ -21,6 +21,16 @@ class Settings(BaseSettings):
     # API-key mode: clients present an issued key as a bearer token.
     mcp_issuer_url: str | None = None
     rate_limit_mcp_per_minute: int = 60
+    # Accounts. Anyone can create one while signup is open; turn it off for a private
+    # deployment and create accounts another way. ADMIN_EMAILS lists who becomes an
+    # administrator on signup; if it is empty, the very first account is the administrator.
+    signup_enabled: bool = True
+    admin_emails: str = ""
+    session_days: int = 7
+    # What a new account may do. Agent keys a person generates for themselves are limited to
+    # what their account may do, and never include review or admin.
+    signup_scopes: str = "read,submit,review,post"
+    rate_limit_auth_per_minute: int = 10
     # Reviewer names (from API_KEYS) that may also manage principals and keys.
     admin_users: str = ""
     # Extraction provider and model. "groq" uses GROQ_API_KEY; "anthropic" uses

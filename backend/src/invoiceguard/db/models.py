@@ -291,6 +291,9 @@ class Principal(Base):
     key_prefix: Mapped[str] = mapped_column(sa.Text)  # first characters, for telling keys apart
     disabled: Mapped[bool] = mapped_column(server_default=sa.false())
     created_by: Mapped[str] = mapped_column(sa.Text)
+    # The person who generated this key for themselves, if any. When that person is disabled
+    # their keys stop working with them.
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(sa.ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=_now()
     )
@@ -372,3 +375,45 @@ class CardTransaction(Base):
     txn_date: Mapped[date] = mapped_column(sa.Date)
     amount: Mapped[Decimal] = mapped_column(MONEY)
     currency: Mapped[str] = mapped_column(sa.String(3))
+
+
+class User(Base):
+    """A person who signs in with an email and password. Only a salted scrypt hash of the
+    password is stored."""
+
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        sa.Uuid, primary_key=True, server_default=sa.text("gen_random_uuid()")
+    )
+    email: Mapped[str] = mapped_column(sa.Text, unique=True)  # stored lower case
+    name: Mapped[str] = mapped_column(sa.Text)  # shown in the audit log
+    # Lower case, so two names cannot differ only by capitals.
+    name_key: Mapped[str] = mapped_column(sa.Text, unique=True)
+    password_hash: Mapped[str] = mapped_column(sa.Text)
+    scopes: Mapped[list[str]] = mapped_column(ARRAY(sa.Text))
+    packs: Mapped[list[str]] = mapped_column(ARRAY(sa.Text))
+    is_admin: Mapped[bool] = mapped_column(server_default=sa.false())
+    disabled: Mapped[bool] = mapped_column(server_default=sa.false())
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=_now()
+    )
+    last_login_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+
+
+class UserSession(Base):
+    """A sign-in. The browser holds a random token; only its hash is stored, so a session can
+    be ended from the server and a database leak does not leak live sessions."""
+
+    __tablename__ = "user_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        sa.Uuid, primary_key=True, server_default=sa.text("gen_random_uuid()")
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("users.id"))
+    token_hash: Mapped[str] = mapped_column(sa.Text, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True))
+    revoked: Mapped[bool] = mapped_column(server_default=sa.false())
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=_now()
+    )

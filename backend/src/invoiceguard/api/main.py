@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from invoiceguard.api import health
 from invoiceguard.api.auth import Principal, current_principal
 from invoiceguard.api.routers import (
+    accounts,
     agent,
     cases,
     documents,
@@ -33,9 +34,10 @@ app = FastAPI(title="InvoiceGuard", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["X-API-Key", "Authorization", "Content-Type"],
 )
+app.include_router(accounts.router)
 app.include_router(invoices.router)
 app.include_router(cases.router)
 app.include_router(agent.router)
@@ -53,6 +55,8 @@ def who_am_i(principal: Principal = Depends(current_principal)) -> dict[str, obj
         "kind": principal.kind,
         "scopes": sorted(principal.scopes),
         "packs": list(principal.packs),
+        "email": principal.email,
+        "account": principal.user_id is not None,
     }
 
 

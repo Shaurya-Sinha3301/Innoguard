@@ -70,13 +70,17 @@ function Orientation() {
   );
 }
 
-function QueueRow({ inv, now }: { inv: Invoice; now: number }) {
+function QueueRow({ inv, now, active }: { inv: Invoice; now: number; active: boolean }) {
   const reasons = primaryReasons(inv.reasons ?? []);
   return (
     <li>
       <Link
         to={`/invoices/${inv.id}`}
-        className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 rounded-xl border border-line bg-surface px-4 py-3 transition-colors hover:border-ink-3 hover:bg-fill-2 sm:grid-cols-[150px_1fr_auto_64px]"
+        aria-current={active ? "true" : undefined}
+        className={cx(
+          "grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 rounded-xl border bg-surface px-4 py-3 transition-colors hover:border-ink-3 hover:bg-fill-2 sm:grid-cols-[150px_1fr_auto_64px]",
+          active ? "border-accent" : "border-line",
+        )}
       >
         <span className="justify-self-start">
           <Chip>{inv.invoice_number ?? "Unread document"}</Chip>
@@ -109,20 +113,8 @@ export default function ReviewDesk() {
   const navigate = useNavigate();
   const [reason, setReason] = useState("all");
   const [search, setSearch] = useState("");
+  const [cursor, setCursor] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
-
-  // "/" jumps to search, as the hint on the field says.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const tag = (e.target as HTMLElement).tagName;
-      if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   // Oldest first: a review queue is worked in arrival order.
   const rows = useMemo(
@@ -142,6 +134,26 @@ export default function ReviewDesk() {
     );
   const max = Math.max(1, ...reasonCounts.map(([, n]) => n));
   const d = metrics.data?.decisions;
+
+  // Keyboard: "/" searches, j and k move through the list, Enter opens the highlighted invoice.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      } else if (e.key === "j") {
+        setCursor((c) => Math.min(c + 1, Math.max(0, shown.length - 1)));
+      } else if (e.key === "k") {
+        setCursor((c) => Math.max(c - 1, 0));
+      } else if (e.key === "Enter" && shown[cursor]) {
+        navigate(`/invoices/${shown[cursor].id}`);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [shown, cursor, navigate]);
   const oldest = rows[0];
   const now = Date.now();
 
@@ -296,11 +308,11 @@ export default function ReviewDesk() {
         {shown.length > 0 && (
           <>
             <p className="label-mono">
-              {shown.length} {shown.length === 1 ? "invoice" : "invoices"} · oldest first
+              {shown.length} {shown.length === 1 ? "invoice" : "invoices"} · oldest first · j / k to move, enter to open
             </p>
             <ul aria-label="Invoices waiting for a decision" className="space-y-2">
-              {shown.map((inv) => (
-                <QueueRow key={inv.id} inv={inv} now={now} />
+              {shown.map((inv, i) => (
+                <QueueRow key={inv.id} inv={inv} now={now} active={i === cursor} />
               ))}
             </ul>
           </>

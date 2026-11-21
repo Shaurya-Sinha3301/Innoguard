@@ -14,6 +14,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Link, useParams } from "react-router-dom";
 import { api, type AuditEvent, type InvoiceDetail } from "../api";
 import {
@@ -166,16 +167,27 @@ function Decision({ inv }: { inv: InvoiceDetail }) {
   const queryClient = useQueryClient();
   const [reason, setReason] = useState("");
   const [total, setTotal] = useState("");
-  const done = () => {
+  const [confirming, setConfirming] = useState<"reject" | "post" | null>(null);
+  const done = (message: string) => () => {
     setReason("");
     setTotal("");
+    setConfirming(null);
+    toast.success(message);
     void queryClient.invalidateQueries();
   };
-  const approve = useMutation({ mutationFn: () => api.approve(inv.id, inv.version, reason.trim()), onSuccess: done });
-  const reject = useMutation({ mutationFn: () => api.reject(inv.id, inv.version, reason.trim()), onSuccess: done });
-  const edit = useMutation({ mutationFn: () => api.edit(inv.id, inv.version, reason.trim(), { total }), onSuccess: done });
-  const post = useMutation({ mutationFn: () => api.post(inv.id), onSuccess: done });
-  const replay = useMutation({ mutationFn: () => api.replay(inv.id), onSuccess: done });
+  const failed = (e: unknown) => {
+    setConfirming(null);
+    toast.error(e instanceof Error ? e.message : "That did not work");
+  };
+  const approve = useMutation({ mutationFn: () => api.approve(inv.id, inv.version, reason.trim()), onSuccess: done("Approved"), onError: failed });
+  const reject = useMutation({ mutationFn: () => api.reject(inv.id, inv.version, reason.trim()), onSuccess: done("Rejected"), onError: failed });
+  const edit = useMutation({ mutationFn: () => api.edit(inv.id, inv.version, reason.trim(), { total }), onSuccess: done("Saved as a new version; earlier approvals no longer count"), onError: failed });
+  const post = useMutation({
+    mutationFn: () => api.post(inv.id),
+    onSuccess: (r) => done(r.outcome === "POSTED" ? "Posted to the system of record" : "Already posted; nothing changed")(),
+    onError: failed,
+  });
+  const replay = useMutation({ mutationFn: () => api.replay(inv.id), onSuccess: done("Sent back through extraction"), onError: failed });
   const error = approve.error ?? reject.error ?? edit.error ?? post.error ?? replay.error;
   const busy = approve.isPending || reject.isPending || edit.isPending || post.isPending || replay.isPending;
 
@@ -208,16 +220,38 @@ function Decision({ inv }: { inv: InvoiceDetail }) {
           <Button size="lg" disabled={!hasReason || busy} onClick={() => approve.mutate()}>
             Approve version {inv.version}
           </Button>
-          <Button size="lg" variant="danger" disabled={!hasReason || busy} onClick={() => reject.mutate()}>
-            Reject
-          </Button>
+          {confirming === "reject" ? (
+            <>
+              <Button size="lg" variant="danger" disabled={busy} onClick={() => reject.mutate()}>
+                Confirm reject
+              </Button>
+              <Button size="lg" variant="ghost" onClick={() => setConfirming(null)}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button size="lg" variant="danger" disabled={!hasReason || busy} onClick={() => setConfirming("reject")}>
+              Reject
+            </Button>
+          )}
         </div>
       )}
       {postable && (
         <div className="space-y-1">
-          <Button size="lg" disabled={busy} onClick={() => post.mutate()}>
-            Post to system of record
-          </Button>
+          {confirming === "post" ? (
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" disabled={busy} onClick={() => post.mutate()}>
+                Confirm post
+              </Button>
+              <Button size="lg" variant="ghost" onClick={() => setConfirming(null)}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button size="lg" disabled={busy} onClick={() => setConfirming("post")}>
+              Post to system of record
+            </Button>
+          )}
           <p className="text-xs text-ink-2">Posting is idempotent: a second attempt is recorded and does nothing.</p>
         </div>
       )}

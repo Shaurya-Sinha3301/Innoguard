@@ -31,14 +31,14 @@ def record(
     *,
     event_type: str,
     actor: str,
-    invoice_id: uuid.UUID | None = None,
+    case_id: uuid.UUID | None = None,
     trace_id: str | None = None,
     payload: dict[str, Any] | None = None,
     duration_ms: int | None = None,
 ) -> None:
     session.add(
         AuditEvent(
-            invoice_id=invoice_id,
+            case_id=case_id,
             trace_id=trace_id,
             event_type=event_type,
             actor=actor,

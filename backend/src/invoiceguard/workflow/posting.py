@@ -35,18 +35,18 @@ class PostOutcome(StrEnum):
 @dataclass(frozen=True)
 class PostResult:
     outcome: PostOutcome
-    invoice_id: uuid.UUID
+    case_id: uuid.UUID
     idempotency_key: str
 
 
-def idempotency_key(invoice_id: uuid.UUID, version: int, total: Decimal) -> str:
+def idempotency_key(case_id: uuid.UUID, version: int, total: Decimal) -> str:
     """Stable key for one invoice, one version and one amount."""
     amount = quantize_money(total)
-    return hashlib.sha256(f"{invoice_id}:{version}:{amount}".encode()).hexdigest()
+    return hashlib.sha256(f"{case_id}:{version}:{amount}".encode()).hexdigest()
 
 
-def post_invoice(session: Session, invoice_id: uuid.UUID, *, actor: str) -> PostResult:
-    row = lock_invoice(session, invoice_id)
+def post_invoice(session: Session, case_id: uuid.UUID, *, actor: str) -> PostResult:
+    row = lock_invoice(session, case_id)
     key = idempotency_key(row.id, row.version, row.total)
 
     already = session.scalar(select(m.Posting.id).where(m.Posting.idempotency_key == key))
@@ -58,8 +58,8 @@ def post_invoice(session: Session, invoice_id: uuid.UUID, *, actor: str) -> Post
     approval_id = session.scalar(
         select(m.Approval.id)
         .where(
-            m.Approval.invoice_id == row.id,
-            m.Approval.invoice_version == row.version,
+            m.Approval.case_id == row.id,
+            m.Approval.case_version == row.version,
             m.Approval.decision.in_(_APPROVING_DECISIONS),
             m.Approval.amount == row.total,
         )
@@ -72,8 +72,8 @@ def post_invoice(session: Session, invoice_id: uuid.UUID, *, actor: str) -> Post
         pg_insert(m.Posting)
         .values(
             idempotency_key=key,
-            invoice_id=row.id,
-            invoice_version=row.version,
+            case_id=row.id,
+            case_version=row.version,
             status="POSTED",
         )
         .on_conflict_do_nothing(index_elements=["idempotency_key"])
@@ -88,19 +88,19 @@ def post_invoice(session: Session, invoice_id: uuid.UUID, *, actor: str) -> Post
         session,
         event_type="posting.posted",
         actor=actor,
-        invoice_id=row.id,
+        case_id=row.id,
         trace_id=row.trace_id,
         payload={"idempotency_key": key, "version": row.version, "amount": row.total},
     )
     return PostResult(PostOutcome.POSTED, row.id, key)
 
 
-def _already_processed(session: Session, row: m.Invoice, actor: str, key: str) -> PostResult:
+def _already_processed(session: Session, row: m.Case, actor: str, key: str) -> PostResult:
     audit.record(
         session,
         event_type="posting.already_processed",
         actor=actor,
-        invoice_id=row.id,
+        case_id=row.id,
         trace_id=row.trace_id,
         payload={"idempotency_key": key},
     )

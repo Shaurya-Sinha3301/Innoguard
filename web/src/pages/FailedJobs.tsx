@@ -39,9 +39,9 @@ export default function FailedJobs() {
               {jobs.data.map((job) => (
                 <Row key={job.id}>
                   <td className={td}>
-                    {job.invoice_id ? (
-                      <Link className="font-mono text-[13px] underline decoration-line underline-offset-4 hover:decoration-red" to={`/invoices/${job.invoice_id}`}>
-                        {job.invoice_id.slice(0, 8)}
+                    {job.case_id ? (
+                      <Link className="font-mono text-[13px] underline decoration-line underline-offset-4 hover:decoration-red" to={`/invoices/${job.case_id}`}>
+                        {job.case_id.slice(0, 8)}
                       </Link>
                     ) : (
                       "—"
@@ -52,8 +52,8 @@ export default function FailedJobs() {
                   <td className={`${td} ${num}`}>{job.attempts}</td>
                   <td className={`${td} text-ink-2`}>{when(job.created_at)}</td>
                   <td className={td}>
-                    {job.invoice_id && (
-                      <Button variant="secondary" disabled={replay.isPending} onClick={() => replay.mutate(job.invoice_id!)}>
+                    {job.case_id && (
+                      <Button variant="secondary" disabled={replay.isPending} onClick={() => replay.mutate(job.case_id!)}>
                         <RotateCcw aria-hidden className="h-3.5 w-3.5" /> Replay
                       </Button>
                     )}

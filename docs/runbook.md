@@ -43,7 +43,7 @@ put the job back through the outbox:
 
 ```sql
 INSERT INTO outbox (topic, payload, status, attempts)
-VALUES ('invoice.extract', jsonb_build_object('invoice_id', '<invoice id>'), 'PENDING', 0);
+VALUES ('invoice.extract', jsonb_build_object('case_id', '<invoice id>'), 'PENDING', 0);
 ```
 
 ## A posting that should not have happened

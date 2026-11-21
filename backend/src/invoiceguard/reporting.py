@@ -19,7 +19,7 @@ def _ratio(part: int, whole: int) -> Decimal | None:
 
 def summary(session: Session) -> dict[str, Any]:
     by_status = dict(
-        session.execute(text("SELECT status, count(*) FROM invoices GROUP BY status")).all()
+        session.execute(text("SELECT status, count(*) FROM cases GROUP BY status")).all()
     )
 
     first_decisions = dict(
@@ -27,11 +27,11 @@ def summary(session: Session) -> dict[str, Any]:
             text(
                 """
                 SELECT decision, count(*) FROM (
-                    SELECT DISTINCT ON (invoice_id) invoice_id, payload->>'to' AS decision
+                    SELECT DISTINCT ON (case_id) case_id, payload->>'to' AS decision
                     FROM audit_events
                     WHERE event_type = 'invoice.state_changed'
                       AND payload->>'to' IN ('AUTO_APPROVED', 'NEEDS_REVIEW', 'REJECTED')
-                    ORDER BY invoice_id, id
+                    ORDER BY case_id, id
                 ) first_decision
                 GROUP BY decision
                 """
@@ -59,20 +59,20 @@ def summary(session: Session) -> dict[str, Any]:
         text(
             """
             WITH entered AS (
-                SELECT invoice_id, min(created_at) AS at
+                SELECT case_id, min(created_at) AS at
                 FROM audit_events
                 WHERE event_type = 'invoice.state_changed' AND payload->>'to' = 'NEEDS_REVIEW'
-                GROUP BY invoice_id
+                GROUP BY case_id
             ), decided AS (
-                SELECT invoice_id, min(created_at) AS at
+                SELECT case_id, min(created_at) AS at
                 FROM approvals WHERE reviewer <> 'system'
-                GROUP BY invoice_id
+                GROUP BY case_id
             )
             SELECT count(*),
                    percentile_cont(0.5) WITHIN GROUP (
                        ORDER BY extract(epoch FROM decided.at - entered.at)
                    )
-            FROM entered JOIN decided USING (invoice_id)
+            FROM entered JOIN decided USING (case_id)
             """
         )
     ).one()

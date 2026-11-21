@@ -36,10 +36,10 @@ def submit(session_factory, label, index):
         return row.id, scenario
 
 
-def event_types(session, invoice_id):
+def event_types(session, case_id):
     return session.scalars(
         sa.select(m.AuditEvent.event_type)
-        .where(m.AuditEvent.invoice_id == invoice_id)
+        .where(m.AuditEvent.case_id == case_id)
         .order_by(m.AuditEvent.id)
     ).all()
 
@@ -60,41 +60,41 @@ def test_database_pipeline_reaches_the_expected_state_for_every_case(session_fac
 
 
 def test_clean_invoice_is_auto_approved_with_an_audit_trail(session_factory):
-    invoice_id, _ = submit(session_factory, CaseLabel.CLEAN, 1)
+    case_id, _ = submit(session_factory, CaseLabel.CLEAN, 1)
     with session_factory() as session:
-        row = session.get(m.Invoice, invoice_id)
+        row = session.get(m.Case, case_id)
         assert row.status == "AUTO_APPROVED"
         approval = session.scalars(sa.select(m.Approval)).one()
-        assert (approval.decision, approval.reviewer, approval.invoice_version) == (
+        assert (approval.decision, approval.reviewer, approval.case_version) == (
             "AUTO_APPROVE",
             "system",
             1,
         )
-        events = event_types(session, invoice_id)
+        events = event_types(session, case_id)
     assert events[0] == "invoice.received"
     assert events.count("invoice.state_changed") == 3  # VALIDATED, MATCHED, AUTO_APPROVED
     assert events[-1] == "approval.recorded"
 
 
 def test_unapproved_invoice_cannot_be_posted(session_factory):
-    invoice_id, _ = submit(session_factory, CaseLabel.PRICE_VARIANCE, 2)
+    case_id, _ = submit(session_factory, CaseLabel.PRICE_VARIANCE, 2)
     with session_factory() as session, pytest.raises(NotApproved):
-        post_invoice(session, invoice_id, actor="worker")
+        post_invoice(session, case_id, actor="worker")
 
 
 def test_reviewer_approval_then_post_then_repeat_is_idempotent(session_factory):
-    invoice_id, _ = submit(session_factory, CaseLabel.PRICE_VARIANCE, 3)
+    case_id, _ = submit(session_factory, CaseLabel.PRICE_VARIANCE, 3)
     with session_factory() as session:
         approve_invoice(
-            session, invoice_id, reviewer="asha", expected_version=1, reason="price confirmed"
+            session, case_id, reviewer="asha", expected_version=1, reason="price confirmed"
         )
-        first = post_invoice(session, invoice_id, actor="worker")
+        first = post_invoice(session, case_id, actor="worker")
         session.commit()
     with session_factory() as session:
-        second = post_invoice(session, invoice_id, actor="worker")
+        second = post_invoice(session, case_id, actor="worker")
         session.commit()
         postings = session.scalar(sa.select(sa.func.count()).select_from(m.Posting))
-        status = session.get(m.Invoice, invoice_id).status
+        status = session.get(m.Case, case_id).status
     assert first.outcome is PostOutcome.POSTED
     assert second.outcome is PostOutcome.ALREADY_PROCESSED
     assert first.idempotency_key == second.idempotency_key
@@ -103,38 +103,38 @@ def test_reviewer_approval_then_post_then_repeat_is_idempotent(session_factory):
 
 
 def test_stale_version_decision_is_refused(session_factory):
-    invoice_id, _ = submit(session_factory, CaseLabel.PRICE_VARIANCE, 4)
+    case_id, _ = submit(session_factory, CaseLabel.PRICE_VARIANCE, 4)
     with session_factory() as session, pytest.raises(StaleVersion):
         approve_invoice(
-            session, invoice_id, reviewer="asha", expected_version=7, reason="looks fine"
+            session, case_id, reviewer="asha", expected_version=7, reason="looks fine"
         )
 
 
 def test_a_reason_is_required(session_factory):
-    invoice_id, _ = submit(session_factory, CaseLabel.PRICE_VARIANCE, 5)
+    case_id, _ = submit(session_factory, CaseLabel.PRICE_VARIANCE, 5)
     with session_factory() as session, pytest.raises(ValueError):
-        approve_invoice(session, invoice_id, reviewer="asha", expected_version=1, reason="  ")
+        approve_invoice(session, case_id, reviewer="asha", expected_version=1, reason="  ")
 
 
 def test_rejected_invoice_cannot_be_approved_afterwards(session_factory):
-    invoice_id, _ = submit(session_factory, CaseLabel.PRICE_VARIANCE, 6)
+    case_id, _ = submit(session_factory, CaseLabel.PRICE_VARIANCE, 6)
     with session_factory() as session:
         reject_invoice(
-            session, invoice_id, reviewer="asha", expected_version=1, reason="wrong price"
+            session, case_id, reviewer="asha", expected_version=1, reason="wrong price"
         )
         session.commit()
     with session_factory() as session, pytest.raises(IllegalTransition):
         approve_invoice(
-            session, invoice_id, reviewer="asha", expected_version=1, reason="changed my mind"
+            session, case_id, reviewer="asha", expected_version=1, reason="changed my mind"
         )
 
 
 def test_material_edit_voids_the_approval_and_blocks_posting(session_factory):
-    invoice_id, _ = submit(session_factory, CaseLabel.CLEAN, 7)  # auto-approved at version 1
+    case_id, _ = submit(session_factory, CaseLabel.CLEAN, 7)  # auto-approved at version 1
     with session_factory() as session:
         row = edit_invoice(
             session,
-            invoice_id,
+            case_id,
             actor="asha",
             expected_version=1,
             reason="supplier sent a corrected total",
@@ -142,22 +142,22 @@ def test_material_edit_voids_the_approval_and_blocks_posting(session_factory):
         )
         session.commit()
         assert (row.status, row.version) == ("NEEDS_REVIEW", 2)
-        events = event_types(session, invoice_id)
+        events = event_types(session, case_id)
     assert "approval.voided" in events
     with session_factory() as session, pytest.raises(NotApproved):
-        post_invoice(session, invoice_id, actor="worker")
+        post_invoice(session, case_id, actor="worker")
 
 
 def test_edit_rejects_fields_that_are_not_editable(session_factory):
-    invoice_id, _ = submit(session_factory, CaseLabel.CLEAN, 8)
+    case_id, _ = submit(session_factory, CaseLabel.CLEAN, 8)
     with session_factory() as session, pytest.raises(ValueError):
         edit_invoice(
-            session, invoice_id, actor="asha", expected_version=1, reason="x", file_hash="abc"
+            session, case_id, actor="asha", expected_version=1, reason="x", file_hash="abc"
         )
 
 
 def test_failed_post_rolls_back_and_a_retry_posts_exactly_once(session_factory, monkeypatch):
-    invoice_id, _ = submit(session_factory, CaseLabel.CLEAN, 9)
+    case_id, _ = submit(session_factory, CaseLabel.CLEAN, 9)
     real_record = audit.record
 
     def failing_record(session, **kwargs):
@@ -168,14 +168,14 @@ def test_failed_post_rolls_back_and_a_retry_posts_exactly_once(session_factory, 
     monkeypatch.setattr(audit, "record", failing_record)
     with session_factory() as session:
         with pytest.raises(RuntimeError):
-            post_invoice(session, invoice_id, actor="worker")
+            post_invoice(session, case_id, actor="worker")
         session.rollback()
     monkeypatch.setattr(audit, "record", real_record)
 
     with session_factory() as session:
         assert session.scalar(sa.select(sa.func.count()).select_from(m.Posting)) == 0
-        assert session.get(m.Invoice, invoice_id).status == "AUTO_APPROVED"
-        result = post_invoice(session, invoice_id, actor="worker")
+        assert session.get(m.Case, case_id).status == "AUTO_APPROVED"
+        result = post_invoice(session, case_id, actor="worker")
         session.commit()
         assert result.outcome is PostOutcome.POSTED
         assert session.scalar(sa.select(sa.func.count()).select_from(m.Posting)) == 1

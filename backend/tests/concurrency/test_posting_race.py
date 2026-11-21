@@ -34,7 +34,7 @@ def _seed_approved_invoice(session_factory, index):
         return row.id
 
 
-def _race(session_factory, invoice_id, workers):
+def _race(session_factory, case_id, workers):
     barrier = threading.Barrier(workers)
     outcomes: list[PostOutcome] = []
     errors: list[BaseException] = []
@@ -44,7 +44,7 @@ def _race(session_factory, invoice_id, workers):
         with session_factory() as session:
             barrier.wait()  # release every worker at the same moment
             try:
-                result = post_invoice(session, invoice_id, actor=name)
+                result = post_invoice(session, case_id, actor=name)
                 session.commit()
                 with lock:
                     outcomes.append(result.outcome)
@@ -65,13 +65,13 @@ def test_unique_constraint_alone_still_prevents_a_double_post(session_factory, m
     """Defence in depth: with the row lock switched off, the database unique constraint on
     the idempotency key must still allow exactly one posting."""
     monkeypatch.setattr(
-        posting, "lock_invoice", lambda session, invoice_id: session.get(m.Invoice, invoice_id)
+        posting, "lock_invoice", lambda session, case_id: session.get(m.Case, case_id)
     )
     workers = 6
     for round_no in range(ROUNDS):
-        invoice_id = _seed_approved_invoice(session_factory, 5000 + round_no)
+        case_id = _seed_approved_invoice(session_factory, 5000 + round_no)
 
-        outcomes, errors = _race(session_factory, invoice_id, workers)
+        outcomes, errors = _race(session_factory, case_id, workers)
 
         assert errors == []
         assert Counter(outcomes) == {
@@ -82,7 +82,7 @@ def test_unique_constraint_alone_still_prevents_a_double_post(session_factory, m
             postings = session.scalar(
                 sa.select(sa.func.count())
                 .select_from(m.Posting)
-                .where(m.Posting.invoice_id == invoice_id)
+                .where(m.Posting.case_id == case_id)
             )
         assert postings == 1
 
@@ -90,9 +90,9 @@ def test_unique_constraint_alone_still_prevents_a_double_post(session_factory, m
 @pytest.mark.parametrize("workers", [2, 6])
 def test_concurrent_posts_of_one_invoice_post_exactly_once(session_factory, workers):
     for round_no in range(ROUNDS):
-        invoice_id = _seed_approved_invoice(session_factory, 1000 + workers * 100 + round_no)
+        case_id = _seed_approved_invoice(session_factory, 1000 + workers * 100 + round_no)
 
-        outcomes, errors = _race(session_factory, invoice_id, workers)
+        outcomes, errors = _race(session_factory, case_id, workers)
 
         assert errors == []
         counts = Counter(outcomes)
@@ -103,12 +103,12 @@ def test_concurrent_posts_of_one_invoice_post_exactly_once(session_factory, work
             postings = session.scalar(
                 sa.select(sa.func.count())
                 .select_from(m.Posting)
-                .where(m.Posting.invoice_id == invoice_id)
+                .where(m.Posting.case_id == case_id)
             )
-            status = session.get(m.Invoice, invoice_id).status
+            status = session.get(m.Case, case_id).status
             events = Counter(
                 session.scalars(
-                    sa.select(m.AuditEvent.event_type).where(m.AuditEvent.invoice_id == invoice_id)
+                    sa.select(m.AuditEvent.event_type).where(m.AuditEvent.case_id == case_id)
                 ).all()
             )
         assert postings == 1

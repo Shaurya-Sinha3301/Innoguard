@@ -34,7 +34,7 @@ class JobOutcome(StrEnum):
 
 def run_extraction_job(
     session_factory: sessionmaker,
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     extractor: Extractor,
     *,
     attempt: int,
@@ -42,7 +42,7 @@ def run_extraction_job(
 ) -> JobOutcome:
     with session_factory() as session:
         try:
-            row = lock_invoice(session, invoice_id)
+            row = lock_invoice(session, case_id)
         except InvoiceNotFound:
             return JobOutcome.SKIPPED
         status = S(row.status)
@@ -51,24 +51,24 @@ def run_extraction_job(
         if status is S.RECEIVED:
             transition(session, row, S.EXTRACTING, actor=SYSTEM)
         # EXTRACTING means a retry, or a redelivery after a worker crash.
-        pdf = document_bytes(session, invoice_id)
+        pdf = document_bytes(session, case_id)
         session.commit()
 
     # The model call runs outside any database transaction.
     try:
         response = extractor.extract(pdf)
     except ExtractionError as exc:
-        return _fail(session_factory, invoice_id, str(exc), attempt)
+        return _fail(session_factory, case_id, str(exc), attempt)
     except (TransientExtractionError, OSError, TimeoutError) as exc:
         if attempt < max_attempts:
             return JobOutcome.RETRY
         return _fail(
-            session_factory, invoice_id, f"retries exhausted after {attempt}: {exc}", attempt
+            session_factory, case_id, f"retries exhausted after {attempt}: {exc}", attempt
         )
 
     with session_factory() as session:
         try:
-            complete_extraction(session, invoice_id, response)
+            complete_extraction(session, case_id, response)
         except IllegalTransition:
             session.rollback()  # another worker finished this invoice first
             return JobOutcome.SKIPPED
@@ -77,11 +77,11 @@ def run_extraction_job(
 
 
 def _fail(
-    session_factory: sessionmaker, invoice_id: uuid.UUID, error: str, attempt: int
+    session_factory: sessionmaker, case_id: uuid.UUID, error: str, attempt: int
 ) -> JobOutcome:
     with session_factory() as session:
         try:
-            fail_extraction(session, invoice_id, error=error, attempts=attempt)
+            fail_extraction(session, case_id, error=error, attempts=attempt)
         except IllegalTransition:
             session.rollback()
             return JobOutcome.SKIPPED

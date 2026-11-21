@@ -77,18 +77,24 @@ class ReceiptLine(Base):
     qty: Mapped[Decimal] = mapped_column(MONEY)
 
 
-class Invoice(Base):
-    __tablename__ = "invoices"
+class Case(Base):
+    """One unit of work for a pack: an invoice today, an expense claim next."""
+
+    __tablename__ = "cases"
     __table_args__ = (
-        sa.Index("ix_invoices_file_hash", "file_hash"),
-        sa.Index("ix_invoices_vendor_number_norm", "vendor_id", "number_norm"),
-        sa.Index("ix_invoices_status", "status"),
+        sa.Index("ix_cases_file_hash", "file_hash"),
+        sa.Index("ix_cases_vendor_number_norm", "vendor_id", "number_norm"),
+        sa.Index("ix_cases_status", "status"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
         sa.Uuid, primary_key=True, server_default=sa.text("gen_random_uuid()")
     )
     # Header fields are empty for an uploaded document until extraction fills them.
+    # Which workflow owns this case, and its pack-specific fields (invoices use the typed
+    # columns below; later packs keep theirs in `data`).
+    pack_id: Mapped[str] = mapped_column(sa.Text, server_default="invoices")
+    data: Mapped[dict] = mapped_column(JSONB, server_default=sa.text("'{}'::jsonb"))
     invoice_number: Mapped[str | None] = mapped_column(sa.Text)
     number_norm: Mapped[str | None] = mapped_column(sa.Text)
     vendor_id: Mapped[str | None] = mapped_column(sa.Text)
@@ -109,7 +115,7 @@ class Invoice(Base):
         sa.DateTime(timezone=True), server_default=_now()
     )
 
-    lines: Mapped[list["InvoiceLine"]] = relationship(cascade="all, delete-orphan")
+    lines: Mapped[list["CaseLine"]] = relationship(cascade="all, delete-orphan")
 
 
 class Document(Base):
@@ -118,7 +124,7 @@ class Document(Base):
     __tablename__ = "documents"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    invoice_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("invoices.id"), unique=True)
+    case_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("cases.id"), unique=True)
     filename: Mapped[str] = mapped_column(sa.Text)
     content_type: Mapped[str] = mapped_column(sa.Text)
     template_id: Mapped[str | None] = mapped_column(sa.Text)
@@ -128,11 +134,11 @@ class Document(Base):
     )
 
 
-class InvoiceLine(Base):
-    __tablename__ = "invoice_lines"
+class CaseLine(Base):
+    __tablename__ = "case_lines"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    invoice_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("invoices.id"))
+    case_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("cases.id"))
     line_no: Mapped[int]
     sku: Mapped[str] = mapped_column(sa.Text)
     qty: Mapped[Decimal] = mapped_column(MONEY)
@@ -145,7 +151,7 @@ class ExtractionField(Base):
     __tablename__ = "extraction_fields"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    invoice_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("invoices.id"))
+    case_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("cases.id"))
     field: Mapped[str] = mapped_column(sa.Text)
     value: Mapped[str | None] = mapped_column(sa.Text)
     confidence: Mapped[Decimal] = mapped_column(sa.Numeric(5, 4))
@@ -157,8 +163,8 @@ class Approval(Base):
     __tablename__ = "approvals"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    invoice_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("invoices.id"))
-    invoice_version: Mapped[int]
+    case_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("cases.id"))
+    case_version: Mapped[int]
     amount: Mapped[Decimal] = mapped_column(MONEY)
     reviewer: Mapped[str] = mapped_column(sa.Text)
     decision: Mapped[str] = mapped_column(sa.Text)
@@ -173,8 +179,8 @@ class Posting(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     idempotency_key: Mapped[str] = mapped_column(sa.Text, unique=True)
-    invoice_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("invoices.id"))
-    invoice_version: Mapped[int]
+    case_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("cases.id"))
+    case_version: Mapped[int]
     status: Mapped[str] = mapped_column(sa.Text)
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=_now()
@@ -202,7 +208,7 @@ class FailedJob(Base):
     __tablename__ = "failed_jobs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    invoice_id: Mapped[uuid.UUID | None] = mapped_column(sa.ForeignKey("invoices.id"))
+    case_id: Mapped[uuid.UUID | None] = mapped_column(sa.ForeignKey("cases.id"))
     task: Mapped[str] = mapped_column(sa.Text)
     error: Mapped[str] = mapped_column(sa.Text)
     attempts: Mapped[int]
@@ -219,7 +225,7 @@ class LlmCall(Base):
     __tablename__ = "llm_calls"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    invoice_id: Mapped[uuid.UUID | None] = mapped_column(sa.ForeignKey("invoices.id"))
+    case_id: Mapped[uuid.UUID | None] = mapped_column(sa.ForeignKey("cases.id"))
     step: Mapped[str] = mapped_column(sa.Text)
     provider: Mapped[str] = mapped_column(sa.Text)
     model: Mapped[str] = mapped_column(sa.Text)
@@ -252,12 +258,12 @@ class AuditEvent(Base):
 
     __tablename__ = "audit_events"
     __table_args__ = (
-        sa.Index("ix_audit_events_invoice", "invoice_id", "id"),
+        sa.Index("ix_audit_events_case", "case_id", "id"),
         sa.Index("ix_audit_events_trace", "trace_id"),
     )
 
     id: Mapped[int] = mapped_column(sa.BigInteger, primary_key=True)
-    invoice_id: Mapped[uuid.UUID | None] = mapped_column(sa.Uuid)
+    case_id: Mapped[uuid.UUID | None] = mapped_column(sa.Uuid)
     trace_id: Mapped[str | None] = mapped_column(sa.Text)
     event_type: Mapped[str] = mapped_column(sa.Text)
     actor: Mapped[str] = mapped_column(sa.Text)

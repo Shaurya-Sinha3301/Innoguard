@@ -43,27 +43,27 @@ def make_due(engine):
         conn.execute(sa.text("UPDATE outbox SET available_at = now() - interval '1 second'"))
 
 
-def drive(session_factory, invoice_id, extractor, max_attempts=4):
+def drive(session_factory, case_id, extractor, max_attempts=4):
     """Run the job the way the queue would: retry until it stops asking to."""
     for attempt in range(1, 20):
         outcome = run_extraction_job(
-            session_factory, invoice_id, extractor, attempt=attempt, max_attempts=max_attempts
+            session_factory, case_id, extractor, attempt=attempt, max_attempts=max_attempts
         )
         if outcome is not JobOutcome.RETRY:
             return outcome
     raise AssertionError("job never finished")
 
 
-def status(session_factory, invoice_id):
+def status(session_factory, case_id):
     with session_factory() as session:
-        return session.get(m.Invoice, invoice_id).status
+        return session.get(m.Case, case_id).status
 
 
 def test_upload_writes_its_job_in_the_same_transaction(session_factory):
-    invoice_id, _ = upload(session_factory, 1)
+    case_id, _ = upload(session_factory, 1)
     rows = outbox_rows(session_factory)
     assert [(r.topic, r.payload, r.status) for r in rows] == [
-        ("invoice.extract", {"invoice_id": str(invoice_id)}, "PENDING")
+        ("invoice.extract", {"case_id": str(case_id)}, "PENDING")
     ]
 
 
@@ -90,12 +90,12 @@ def test_broker_outage_keeps_jobs_until_it_recovers(session_factory, engine):
     # Backoff: rows are not due again immediately.
     published: list[str] = []
     assert (
-        dispatch_pending(session_factory, lambda t, p, i: published.append(p["invoice_id"])).sent
+        dispatch_pending(session_factory, lambda t, p, i: published.append(p["case_id"])).sent
         == 0
     )
 
     make_due(engine)
-    up = dispatch_pending(session_factory, lambda t, p, i: published.append(p["invoice_id"]))
+    up = dispatch_pending(session_factory, lambda t, p, i: published.append(p["case_id"]))
     assert up.sent == 3
     assert sorted(published) == sorted(str(i) for i in ids)  # every job, exactly once
     assert dispatch_pending(session_factory, lambda t, p, i: published.append("again")).sent == 0
@@ -131,61 +131,61 @@ def test_concurrent_dispatchers_never_send_a_message_twice(session_factory):
 
 
 def test_transient_failures_are_retried_then_succeed(session_factory):
-    invoice_id, truth = upload(session_factory, 50)
+    case_id, truth = upload(session_factory, 50)
     extractor = FakeExtractor(truth, transient_failures=2)
-    assert drive(session_factory, invoice_id, extractor) is JobOutcome.DONE
+    assert drive(session_factory, case_id, extractor) is JobOutcome.DONE
     assert extractor.calls == 3
-    assert status(session_factory, invoice_id) == "AUTO_APPROVED"
+    assert status(session_factory, case_id) == "AUTO_APPROVED"
 
 
 def test_exhausted_retries_dead_letter_then_replay_succeeds(session_factory):
-    invoice_id, truth = upload(session_factory, 51)
+    case_id, truth = upload(session_factory, 51)
     flaky = FakeExtractor(truth, transient_failures=10)
-    assert drive(session_factory, invoice_id, flaky, max_attempts=3) is JobOutcome.FAILED
+    assert drive(session_factory, case_id, flaky, max_attempts=3) is JobOutcome.FAILED
     assert flaky.calls == 3
-    assert status(session_factory, invoice_id) == "FAILED"
+    assert status(session_factory, case_id) == "FAILED"
     with session_factory() as session:
         job = session.scalars(sa.select(m.FailedJob)).one()
         assert "retries exhausted after 3" in job.error
 
     with session_factory() as session:
-        replay_failed(session, invoice_id, actor="ops")
+        replay_failed(session, case_id, actor="ops")
         session.commit()
-    assert status(session_factory, invoice_id) == "RECEIVED"
+    assert status(session_factory, case_id) == "RECEIVED"
     assert [r.status for r in outbox_rows(session_factory)] == ["PENDING", "PENDING"]
 
-    assert drive(session_factory, invoice_id, FakeExtractor(truth)) is JobOutcome.DONE
-    assert status(session_factory, invoice_id) == "AUTO_APPROVED"
+    assert drive(session_factory, case_id, FakeExtractor(truth)) is JobOutcome.DONE
+    assert status(session_factory, case_id) == "AUTO_APPROVED"
     with session_factory() as session:
         job = session.scalars(sa.select(m.FailedJob)).one()
         assert (job.status, job.replayed_at is not None) == ("REPLAYED", True)
 
 
 def test_permanent_failure_is_not_retried(session_factory):
-    invoice_id, _ = upload(session_factory, 52)
+    case_id, _ = upload(session_factory, 52)
     extractor = FakeExtractor(permanent_error="the model declined this document")
-    assert drive(session_factory, invoice_id, extractor) is JobOutcome.FAILED
+    assert drive(session_factory, case_id, extractor) is JobOutcome.FAILED
     assert extractor.calls == 1
 
 
 def test_only_failed_invoices_can_be_replayed(session_factory):
-    invoice_id, _ = upload(session_factory, 53)
+    case_id, _ = upload(session_factory, 53)
     with session_factory() as session, pytest.raises(IllegalTransition):
-        replay_failed(session, invoice_id, actor="ops")
+        replay_failed(session, case_id, actor="ops")
 
 
 def test_duplicate_delivery_is_harmless(session_factory):
-    invoice_id, truth = upload(session_factory, 54)
-    assert drive(session_factory, invoice_id, FakeExtractor(truth)) is JobOutcome.DONE
+    case_id, truth = upload(session_factory, 54)
+    assert drive(session_factory, case_id, FakeExtractor(truth)) is JobOutcome.DONE
     again = FakeExtractor(truth)
-    assert drive(session_factory, invoice_id, again) is JobOutcome.SKIPPED
+    assert drive(session_factory, case_id, again) is JobOutcome.SKIPPED
     assert again.calls == 0
     with session_factory() as session:
         assert session.scalar(sa.select(sa.func.count()).select_from(m.LlmCall)) == 1
 
 
 def test_two_workers_on_the_same_job_complete_it_once(session_factory):
-    invoice_id, truth = upload(session_factory, 55)
+    case_id, truth = upload(session_factory, 55)
     barrier = threading.Barrier(2)
     outcomes: list[JobOutcome] = []
 
@@ -198,7 +198,7 @@ def test_two_workers_on_the_same_job_complete_it_once(session_factory):
         barrier.wait()
         outcomes.append(
             run_extraction_job(
-                session_factory, invoice_id, SlowFake(truth), attempt=1, max_attempts=3
+                session_factory, case_id, SlowFake(truth), attempt=1, max_attempts=3
             )
         )
 
@@ -214,7 +214,7 @@ def test_two_workers_on_the_same_job_complete_it_once(session_factory):
         fields = session.scalar(
             sa.select(sa.func.count())
             .select_from(m.ExtractionField)
-            .where(m.ExtractionField.invoice_id == invoice_id)
+            .where(m.ExtractionField.case_id == case_id)
         )
     assert calls == 1
     assert fields == len(truth.lines) + 7

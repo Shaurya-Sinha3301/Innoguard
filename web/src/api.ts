@@ -113,7 +113,7 @@ export type InvoiceDetail = Invoice & {
   received: Record<string, string>;
   lines: { line_no: number; sku: string; qty: string; unit_price: string }[];
   approvals: {
-    invoice_version: number;
+    case_version: number;
     amount: string;
     reviewer: string;
     decision: string;
@@ -143,7 +143,7 @@ export type ExtractionField = {
 
 export type FailedJob = {
   id: number;
-  invoice_id: string | null;
+  case_id: string | null;
   task: string;
   error: string;
   attempts: number;

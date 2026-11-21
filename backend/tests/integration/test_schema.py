@@ -17,7 +17,7 @@ def _insert_invoice(conn) -> str:
     return conn.execute(
         sa.text(
             """
-            INSERT INTO invoices
+            INSERT INTO cases
               (invoice_number, number_norm, vendor_id, currency, subtotal, tax, total, file_hash)
             VALUES ('INV-1', 'INV1', 'V001', 'INR', 100, 5, 105, 'hash-1')
             RETURNING id
@@ -28,10 +28,10 @@ def _insert_invoice(conn) -> str:
 
 def test_invoice_defaults(engine):
     with engine.connect() as conn:
-        invoice_id = _insert_invoice(conn)
+        case_id = _insert_invoice(conn)
         row = conn.execute(
-            sa.text("SELECT status, version, invoice_type FROM invoices WHERE id = :i"),
-            {"i": invoice_id},
+            sa.text("SELECT status, version, invoice_type FROM cases WHERE id = :i"),
+            {"i": case_id},
         ).one()
         conn.rollback()  # leave the table clean for the other tests
     assert tuple(row) == ("RECEIVED", 1, "INVOICE")
@@ -70,16 +70,16 @@ def test_audit_events_reject_update_delete_and_truncate(engine):
 
 def test_posting_idempotency_key_is_unique(engine):
     with engine.begin() as conn:
-        invoice_id = _insert_invoice(conn)
+        case_id = _insert_invoice(conn)
         insert = sa.text(
-            "INSERT INTO postings (idempotency_key, invoice_id, invoice_version, status) "
+            "INSERT INTO postings (idempotency_key, case_id, case_version, status) "
             "VALUES ('key-1', :i, 1, 'POSTED')"
         )
-        conn.execute(insert, {"i": invoice_id})
+        conn.execute(insert, {"i": case_id})
 
     try:
         with engine.begin() as conn:
-            conn.execute(insert, {"i": invoice_id})
+            conn.execute(insert, {"i": case_id})
     except IntegrityError:
         pass
     else:

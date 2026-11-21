@@ -27,24 +27,24 @@ EDITABLE_FIELDS = frozenset({"po_number", "vendor_id", "currency", "subtotal", "
 _EDITABLE_STATES = frozenset({S.NEEDS_REVIEW, S.APPROVED, S.AUTO_APPROVED})
 
 
-def lock_invoice(session: Session, invoice_id: uuid.UUID) -> m.Invoice:
+def lock_invoice(session: Session, case_id: uuid.UUID) -> m.Case:
     """Load an invoice and hold a row lock until the transaction ends."""
     # populate_existing: always read the locked row from the database, never a stale copy
     # this session may already hold in memory.
     row = session.execute(
-        select(m.Invoice)
-        .where(m.Invoice.id == invoice_id)
+        select(m.Case)
+        .where(m.Case.id == case_id)
         .with_for_update()
         .execution_options(populate_existing=True)
     ).scalar_one_or_none()
     if row is None:
-        raise InvoiceNotFound(str(invoice_id))
+        raise InvoiceNotFound(str(case_id))
     return row
 
 
 def transition(
     session: Session,
-    row: m.Invoice,
+    row: m.Case,
     target: S,
     *,
     actor: str,
@@ -58,14 +58,14 @@ def transition(
         session,
         event_type="invoice.state_changed",
         actor=actor,
-        invoice_id=row.id,
+        case_id=row.id,
         trace_id=row.trace_id,
         payload={"from": previous, "to": target.value, **(payload or {})},
     )
 
 
 def reconcile_row(
-    session: Session, row: m.Invoice, extraction_confidence: Decimal = Decimal(1)
+    session: Session, row: m.Case, extraction_confidence: Decimal = Decimal(1)
 ) -> Reconciliation:
     return reconcile(
         repo.to_domain_invoice(row),
@@ -87,7 +87,7 @@ def reconcile_row(
 
 def apply_reconciliation(
     session: Session,
-    row: m.Invoice,
+    row: m.Case,
     *,
     actor: str = SYSTEM,
     extraction_confidence: Decimal = Decimal(1),
@@ -116,8 +116,8 @@ def apply_reconciliation(
         transition(session, row, S.AUTO_APPROVED, actor=actor, payload=payload)
         session.add(
             m.Approval(
-                invoice_id=row.id,
-                invoice_version=row.version,
+                case_id=row.id,
+                case_version=row.version,
                 amount=row.total,
                 reviewer=SYSTEM,
                 decision="AUTO_APPROVE",
@@ -128,7 +128,7 @@ def apply_reconciliation(
             session,
             event_type="approval.recorded",
             actor=SYSTEM,
-            invoice_id=row.id,
+            case_id=row.id,
             trace_id=row.trace_id,
             payload={"decision": "AUTO_APPROVE", "version": row.version, "amount": row.total},
         )
@@ -146,8 +146,8 @@ def submit_invoice(
     actor: str = SYSTEM,
     trace_id: str | None = None,
     extraction_confidence: Decimal = Decimal(1),
-) -> m.Invoice:
-    row = m.Invoice(
+) -> m.Case:
+    row = m.Case(
         invoice_number=invoice.invoice_number,
         number_norm=normalize_invoice_number(invoice.invoice_number),
         vendor_id=invoice.vendor_id,
@@ -162,7 +162,7 @@ def submit_invoice(
         trace_id=trace_id or uuid.uuid4().hex,
     )
     row.lines = [
-        m.InvoiceLine(line_no=i, sku=line.sku, qty=line.qty, unit_price=line.unit_price)
+        m.CaseLine(line_no=i, sku=line.sku, qty=line.qty, unit_price=line.unit_price)
         for i, line in enumerate(invoice.lines, start=1)
     ]
     session.add(row)
@@ -171,7 +171,7 @@ def submit_invoice(
         session,
         event_type="invoice.received",
         actor=actor,
-        invoice_id=row.id,
+        case_id=row.id,
         trace_id=row.trace_id,
         payload={"invoice_number": invoice.invoice_number, "total": invoice.total},
     )
@@ -189,15 +189,15 @@ def _require_reason(reason: str) -> str:
 
 def _decide_review(
     session: Session,
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     *,
     reviewer: str,
     expected_version: int,
     reason: str,
     approve: bool,
-) -> m.Invoice:
+) -> m.Case:
     reason = _require_reason(reason)
-    row = lock_invoice(session, invoice_id)
+    row = lock_invoice(session, case_id)
     if row.version != expected_version:
         raise StaleVersion(
             f"invoice is at version {row.version}, the decision was made on {expected_version}"
@@ -206,8 +206,8 @@ def _decide_review(
     transition(session, row, target, actor=reviewer, payload={"reason": reason})
     session.add(
         m.Approval(
-            invoice_id=row.id,
-            invoice_version=row.version,
+            case_id=row.id,
+            case_version=row.version,
             amount=row.total,
             reviewer=reviewer,
             decision="APPROVE" if approve else "REJECT",
@@ -218,7 +218,7 @@ def _decide_review(
         session,
         event_type="approval.recorded",
         actor=reviewer,
-        invoice_id=row.id,
+        case_id=row.id,
         trace_id=row.trace_id,
         payload={
             "decision": "APPROVE" if approve else "REJECT",
@@ -231,11 +231,11 @@ def _decide_review(
 
 
 def approve_invoice(
-    session: Session, invoice_id: uuid.UUID, *, reviewer: str, expected_version: int, reason: str
-) -> m.Invoice:
+    session: Session, case_id: uuid.UUID, *, reviewer: str, expected_version: int, reason: str
+) -> m.Case:
     return _decide_review(
         session,
-        invoice_id,
+        case_id,
         reviewer=reviewer,
         expected_version=expected_version,
         reason=reason,
@@ -244,11 +244,11 @@ def approve_invoice(
 
 
 def reject_invoice(
-    session: Session, invoice_id: uuid.UUID, *, reviewer: str, expected_version: int, reason: str
-) -> m.Invoice:
+    session: Session, case_id: uuid.UUID, *, reviewer: str, expected_version: int, reason: str
+) -> m.Case:
     return _decide_review(
         session,
-        invoice_id,
+        case_id,
         reviewer=reviewer,
         expected_version=expected_version,
         reason=reason,
@@ -258,20 +258,20 @@ def reject_invoice(
 
 def edit_invoice(
     session: Session,
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     *,
     actor: str,
     expected_version: int,
     reason: str,
     **changes: Any,
-) -> m.Invoice:
+) -> m.Case:
     """Apply a material edit. It bumps the version and voids any earlier approval."""
     reason = _require_reason(reason)
     unknown = set(changes) - EDITABLE_FIELDS
     if unknown:
         raise ValueError(f"fields cannot be edited: {sorted(unknown)}")
 
-    row = lock_invoice(session, invoice_id)
+    row = lock_invoice(session, case_id)
     if row.version != expected_version:
         raise StaleVersion(
             f"invoice is at version {row.version}, the edit was made on {expected_version}"
@@ -301,7 +301,7 @@ def edit_invoice(
         session,
         event_type="invoice.edited",
         actor=actor,
-        invoice_id=row.id,
+        case_id=row.id,
         trace_id=row.trace_id,
         payload={"changes": diff, "reason": reason, "new_version": row.version},
     )
@@ -310,7 +310,7 @@ def edit_invoice(
             session,
             event_type="approval.voided",
             actor=actor,
-            invoice_id=row.id,
+            case_id=row.id,
             trace_id=row.trace_id,
             payload={"voided_version": row.version - 1},
         )
@@ -322,7 +322,7 @@ def edit_invoice(
         session,
         event_type="invoice.reconciled_after_edit",
         actor=SYSTEM,
-        invoice_id=row.id,
+        case_id=row.id,
         trace_id=row.trace_id,
         payload={
             "outcome": result.decision.outcome.value,

@@ -456,9 +456,9 @@ export default function InvoiceDetailPage() {
               <ul className="divide-y divide-line">
                 {inv.approvals.map((a, i) => (
                   <li key={i} className="px-4 py-2.5 text-sm">
-                    <span className="font-semibold">{humanize(a.decision)}</span> by {a.reviewer} · v{a.invoice_version} ·{" "}
+                    <span className="font-semibold">{humanize(a.decision)}</span> by {a.reviewer} · v{a.case_version} ·{" "}
                     <span className="font-mono text-[13px]">{money(a.amount)}</span>
-                    {a.invoice_version !== inv.version && <span className="ml-1 text-xs font-semibold text-red">void, older version</span>}
+                    {a.case_version !== inv.version && <span className="ml-1 text-xs font-semibold text-red">void, older version</span>}
                     {a.reason && <p className="truncate text-ink-2">“{a.reason}”</p>}
                   </li>
                 ))}

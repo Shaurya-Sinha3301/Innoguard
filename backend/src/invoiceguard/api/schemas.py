@@ -77,7 +77,7 @@ class LineOut(BaseModel):
 class ApprovalOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    invoice_version: int
+    case_version: int
     amount: Decimal
     reviewer: str
     decision: str
@@ -137,7 +137,7 @@ class FailedJobOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    invoice_id: uuid.UUID | None
+    case_id: uuid.UUID | None
     task: str
     error: str
     attempts: int
@@ -147,5 +147,5 @@ class FailedJobOut(BaseModel):
 
 class PostOut(BaseModel):
     outcome: str
-    invoice_id: uuid.UUID
+    case_id: uuid.UUID
     idempotency_key: str

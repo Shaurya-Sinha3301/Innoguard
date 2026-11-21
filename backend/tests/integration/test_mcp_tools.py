@@ -52,7 +52,7 @@ def test_invalid_identifiers_are_rejected(session_factory, bad):
 
 def test_the_database_refuses_writes_in_a_tool_session(session_factory, seeded):
     with tools.readonly_session(session_factory) as session, pytest.raises(DBAPIError) as exc:
-        session.execute(sa.text("UPDATE invoices SET status = 'POSTED'"))
+        session.execute(sa.text("UPDATE cases SET status = 'POSTED'"))
     assert "read-only" in str(exc.value)
 
 

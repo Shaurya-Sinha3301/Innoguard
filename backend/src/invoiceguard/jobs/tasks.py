@@ -13,11 +13,11 @@ def ping() -> str:
 
 
 @celery_app.task(name="invoiceguard.extract", bind=True, max_retries=None)
-def extract_invoice(self, invoice_id: str) -> str:
+def extract_invoice(self, case_id: str) -> str:
     attempt = self.request.retries + 1
     outcome = run_extraction_job(
         SessionLocal,
-        uuid.UUID(invoice_id),
+        uuid.UUID(case_id),
         build_extractor(),
         attempt=attempt,
         max_attempts=settings.extraction_max_attempts,
@@ -33,5 +33,5 @@ def publish(topic: str, payload: dict, message_id: int) -> None:
     if topic != "invoice.extract":
         raise ValueError(f"unknown topic {topic}")
     extract_invoice.apply_async(
-        args=[payload["invoice_id"]], task_id=f"outbox-{message_id}", retry=False
+        args=[payload["case_id"]], task_id=f"outbox-{message_id}", retry=False
     )

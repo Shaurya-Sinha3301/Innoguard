@@ -56,7 +56,7 @@ class Invoice:
 class ExistingInvoice:
     """An invoice already on file, used for duplicate detection."""
 
-    invoice_id: str
+    case_id: str
     file_hash: str
     vendor_id: str
     number_norm: str

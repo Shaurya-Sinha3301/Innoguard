@@ -24,7 +24,7 @@ async def upload_document(
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
     user: str = Depends(current_user),
-) -> m.Invoice:
+) -> m.Case:
     data = await file.read(MAX_UPLOAD_BYTES + 1)
     try:
         return submit_document(session, data, filename=file.filename or "upload.pdf", actor=user)
@@ -32,13 +32,13 @@ async def upload_document(
         raise HTTPException(422, str(exc)) from exc
 
 
-@router.get("/invoices/{invoice_id}/document")
+@router.get("/invoices/{case_id}/document")
 def get_document(
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     session: Session = Depends(get_session),
     _user: str = Depends(current_user),
 ) -> Response:
-    doc = session.scalars(select(m.Document).where(m.Document.invoice_id == invoice_id)).first()
+    doc = session.scalars(select(m.Document).where(m.Document.case_id == case_id)).first()
     if doc is None:
         raise HTTPException(404, "no document for this invoice")
     return Response(
@@ -48,16 +48,16 @@ def get_document(
     )
 
 
-@router.get("/invoices/{invoice_id}/extraction", response_model=list[schemas.ExtractionFieldOut])
+@router.get("/invoices/{case_id}/extraction", response_model=list[schemas.ExtractionFieldOut])
 def get_extraction(
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     session: Session = Depends(get_session),
     _user: str = Depends(current_user),
 ) -> list[m.ExtractionField]:
     return list(
         session.scalars(
             select(m.ExtractionField)
-            .where(m.ExtractionField.invoice_id == invoice_id)
+            .where(m.ExtractionField.case_id == case_id)
             .order_by(m.ExtractionField.id)
         )
     )
@@ -76,16 +76,16 @@ def list_failed_jobs(
 
 
 @router.post(
-    "/invoices/{invoice_id}/replay", response_model=schemas.InvoiceOut,
+    "/invoices/{case_id}/replay", response_model=schemas.InvoiceOut,
     dependencies=[Depends(require_scope("review")), *WRITE_GUARDS],
 )
 def replay(
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     session: Session = Depends(get_session),
     user: str = Depends(current_user),
-) -> m.Invoice:
+) -> m.Case:
     try:
-        return replay_failed(session, invoice_id, actor=user)
+        return replay_failed(session, case_id, actor=user)
     except InvoiceNotFound as exc:
         raise HTTPException(404, "invoice not found") from exc
     except IllegalTransition as exc:

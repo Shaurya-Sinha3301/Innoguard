@@ -23,7 +23,7 @@ def test_file_hash_is_stable():
 
 
 def _existing(**overrides):
-    base = {"invoice_id": "e1", "file_hash": "h1", "vendor_id": "V001", "number_norm": "INV42"}
+    base = {"case_id": "e1", "file_hash": "h1", "vendor_id": "V001", "number_norm": "INV42"}
     return ExistingInvoice(**{**base, **overrides})
 
 

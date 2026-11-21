@@ -95,9 +95,9 @@ def get_invoice_history(session: Session, vendor_id: str, limit: int = 20) -> li
     if not isinstance(limit, int) or limit < 1:
         raise ToolInputError("limit must be a positive integer")
     rows = session.scalars(
-        select(m.Invoice)
-        .where(m.Invoice.vendor_id == vendor_id)
-        .order_by(m.Invoice.created_at.desc())
+        select(m.Case)
+        .where(m.Case.vendor_id == vendor_id)
+        .order_by(m.Case.created_at.desc())
         .limit(min(limit, MAX_HISTORY))
     ).all()
     return [

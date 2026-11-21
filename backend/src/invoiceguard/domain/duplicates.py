@@ -50,5 +50,5 @@ def find_duplicates(
         if same_key and not same_file:
             business = True
         if same_file or same_key:
-            matched.append(other.invoice_id)
+            matched.append(other.case_id)
     return DuplicateResult(exact=exact, business_key=business, matched_ids=tuple(matched))

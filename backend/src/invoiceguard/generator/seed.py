@@ -34,9 +34,9 @@ def seed_master_data(session: Session, scenario: Scenario) -> None:
 
     for existing in scenario.existing_invoices:
         session.add(
-            m.Invoice(
+            m.Case(
                 id=uuid.uuid4(),
-                invoice_number=existing.invoice_id,
+                invoice_number=existing.case_id,
                 number_norm=existing.number_norm,
                 vendor_id=existing.vendor_id,
                 po_number=None,

@@ -49,11 +49,11 @@ def load_existing(
 ) -> tuple[d.ExistingInvoice, ...]:
     """Invoices that could be duplicates of this one (same file, or same vendor and number)."""
     rows = session.execute(
-        select(m.Invoice.id, m.Invoice.file_hash, m.Invoice.vendor_id, m.Invoice.number_norm).where(
-            m.Invoice.id != exclude_id,
+        select(m.Case.id, m.Case.file_hash, m.Case.vendor_id, m.Case.number_norm).where(
+            m.Case.id != exclude_id,
             or_(
-                m.Invoice.file_hash == file_hash,
-                (m.Invoice.vendor_id == vendor_id) & (m.Invoice.number_norm == number_norm),
+                m.Case.file_hash == file_hash,
+                (m.Case.vendor_id == vendor_id) & (m.Case.number_norm == number_norm),
             ),
         )
     ).all()
@@ -69,14 +69,14 @@ def previously_invoiced(
     if po_number is None:
         return {}
     rows = session.execute(
-        select(m.InvoiceLine.sku, func.sum(m.InvoiceLine.qty))
-        .join(m.Invoice, m.Invoice.id == m.InvoiceLine.invoice_id)
+        select(m.CaseLine.sku, func.sum(m.CaseLine.qty))
+        .join(m.Case, m.Case.id == m.CaseLine.case_id)
         .where(
-            m.Invoice.po_number == po_number,
-            m.Invoice.id != exclude_id,
-            m.Invoice.status.in_(_BILLED_STATES),
+            m.Case.po_number == po_number,
+            m.Case.id != exclude_id,
+            m.Case.status.in_(_BILLED_STATES),
         )
-        .group_by(m.InvoiceLine.sku)
+        .group_by(m.CaseLine.sku)
     ).all()
     totals: dict[str, Decimal] = defaultdict(Decimal)
     for sku, qty in rows:
@@ -84,7 +84,7 @@ def previously_invoiced(
     return dict(totals)
 
 
-def to_domain_invoice(row: m.Invoice) -> d.Invoice:
+def to_domain_invoice(row: m.Case) -> d.Invoice:
     return d.Invoice(
         invoice_number=row.invoice_number,
         vendor_id=row.vendor_id,

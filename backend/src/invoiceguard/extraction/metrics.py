@@ -40,14 +40,14 @@ def tokens_per_second(usage: LlmUsage) -> Decimal | None:
 def record_llm_call(
     session: Session,
     *,
-    invoice_id: uuid.UUID | None,
+    case_id: uuid.UUID | None,
     step: str,
     usage: LlmUsage,
     trace_id: str | None,
 ) -> None:
     session.add(
         LlmCall(
-            invoice_id=invoice_id,
+            case_id=case_id,
             step=step,
             provider=usage.provider,
             model=usage.model,

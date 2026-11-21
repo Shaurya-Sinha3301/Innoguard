@@ -42,7 +42,7 @@ def submit(
     body: schemas.InvoiceIn,
     session: Session = Depends(get_session),
     user: str = Depends(current_user),
-) -> m.Invoice:
+) -> m.Case:
     invoice = d.Invoice(
         invoice_number=body.invoice_number,
         vendor_id=body.vendor_id,
@@ -64,9 +64,9 @@ def list_invoices(
     session: Session = Depends(get_session),
     _user: str = Depends(current_user),
 ) -> list[dict]:
-    query = select(m.Invoice).order_by(m.Invoice.created_at.desc()).limit(limit)
+    query = select(m.Case).order_by(m.Case.created_at.desc()).limit(limit)
     if status:
-        query = query.where(m.Invoice.status == status)
+        query = query.where(m.Case.status == status)
     rows = list(session.scalars(query))
     reasons = _latest_reasons(session, [row.id for row in rows])
     return [
@@ -82,37 +82,37 @@ def _latest_reasons(session: Session, ids: list[uuid.UUID]) -> dict[uuid.UUID, l
     found = session.execute(
         text(
             """
-            SELECT DISTINCT ON (invoice_id) invoice_id, payload->'reasons'
+            SELECT DISTINCT ON (case_id) case_id, payload->'reasons'
             FROM audit_events
-            WHERE invoice_id = ANY(:ids)
+            WHERE case_id = ANY(:ids)
               AND event_type = 'invoice.state_changed'
               AND jsonb_typeof(payload->'reasons') = 'array'
               AND jsonb_array_length(payload->'reasons') > 0
-            ORDER BY invoice_id, id DESC
+            ORDER BY case_id, id DESC
             """
         ),
         {"ids": ids},
     ).all()
-    return {invoice_id: list(reasons) for invoice_id, reasons in found}
+    return {case_id: list(reasons) for case_id, reasons in found}
 
 
-@router.get("/{invoice_id}", response_model=schemas.InvoiceDetail)
+@router.get("/{case_id}", response_model=schemas.InvoiceDetail)
 def get_invoice(
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     session: Session = Depends(get_session),
     _user: str = Depends(current_user),
 ) -> dict:
-    row = session.get(m.Invoice, invoice_id)
+    row = session.get(m.Case, case_id)
     if row is None:
         raise HTTPException(404, "invoice not found")
     approvals = session.scalars(
-        select(m.Approval).where(m.Approval.invoice_id == invoice_id).order_by(m.Approval.id)
+        select(m.Approval).where(m.Approval.case_id == case_id).order_by(m.Approval.id)
     ).all()
     timeline = session.scalars(
-        select(m.AuditEvent).where(m.AuditEvent.invoice_id == invoice_id).order_by(m.AuditEvent.id)
+        select(m.AuditEvent).where(m.AuditEvent.case_id == case_id).order_by(m.AuditEvent.id)
     ).all()
     llm_calls = session.scalars(
-        select(m.LlmCall).where(m.LlmCall.invoice_id == invoice_id).order_by(m.LlmCall.id)
+        select(m.LlmCall).where(m.LlmCall.case_id == case_id).order_by(m.LlmCall.id)
     ).all()
     po = repo.load_po(session, row.po_number)
     receipts = repo.load_receipts(session, row.po_number)
@@ -147,16 +147,16 @@ def get_invoice(
 
 def _decide(approve: bool):
     def endpoint(
-        invoice_id: uuid.UUID,
+        case_id: uuid.UUID,
         body: schemas.DecisionIn,
         session: Session = Depends(get_session),
         user: str = Depends(current_user),
-    ) -> m.Invoice:
+    ) -> m.Case:
         action = service.approve_invoice if approve else service.reject_invoice
         try:
             return action(
                 session,
-                invoice_id,
+                case_id,
                 reviewer=user,
                 expected_version=body.expected_version,
                 reason=body.reason,
@@ -167,21 +167,21 @@ def _decide(approve: bool):
     return endpoint
 
 
-router.post("/{invoice_id}/approve", response_model=schemas.InvoiceOut, dependencies=REVIEW)(
+router.post("/{case_id}/approve", response_model=schemas.InvoiceOut, dependencies=REVIEW)(
     _decide(True)
 )
-router.post("/{invoice_id}/reject", response_model=schemas.InvoiceOut, dependencies=REVIEW)(
+router.post("/{case_id}/reject", response_model=schemas.InvoiceOut, dependencies=REVIEW)(
     _decide(False)
 )
 
 
-@router.post("/{invoice_id}/edit", response_model=schemas.InvoiceOut, dependencies=REVIEW)
+@router.post("/{case_id}/edit", response_model=schemas.InvoiceOut, dependencies=REVIEW)
 def edit(
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     body: schemas.EditIn,
     session: Session = Depends(get_session),
     user: str = Depends(current_user),
-) -> m.Invoice:
+) -> m.Case:
     changes = dict(body.changes)
     for field in ("subtotal", "tax", "total"):
         if field in changes:
@@ -189,7 +189,7 @@ def edit(
     try:
         return service.edit_invoice(
             session,
-            invoice_id,
+            case_id,
             actor=user,
             expected_version=body.expected_version,
             reason=body.reason,
@@ -199,18 +199,18 @@ def edit(
         raise _http_error(exc) from exc
 
 
-@router.post("/{invoice_id}/post", response_model=schemas.PostOut, dependencies=POST)
+@router.post("/{case_id}/post", response_model=schemas.PostOut, dependencies=POST)
 def post(
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     session: Session = Depends(get_session),
     user: str = Depends(current_user),
 ) -> schemas.PostOut:
     try:
-        result = post_invoice(session, invoice_id, actor=user)
+        result = post_invoice(session, case_id, actor=user)
     except (InvoiceNotFound, NotApproved, IllegalTransition) as exc:
         raise _http_error(exc) from exc
     return schemas.PostOut(
         outcome=result.outcome.value,
-        invoice_id=result.invoice_id,
+        case_id=result.case_id,
         idempotency_key=result.idempotency_key,
     )

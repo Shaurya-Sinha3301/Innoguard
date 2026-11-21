@@ -36,13 +36,13 @@ def register_upload(
     filename: str,
     actor: str,
     template_id: str | None = None,
-) -> m.Invoice:
+) -> m.Case:
     if not pdf.startswith(b"%PDF"):
         raise ValueError("only PDF files are accepted")
     if len(pdf) > MAX_UPLOAD_BYTES:
         raise ValueError("file is larger than the 5 MB limit")
 
-    row = m.Invoice(
+    row = m.Case(
         file_hash=hashlib.sha256(pdf).hexdigest(),
         status=S.RECEIVED.value,
         version=1,
@@ -52,7 +52,7 @@ def register_upload(
     session.flush()
     session.add(
         m.Document(
-            invoice_id=row.id,
+            case_id=row.id,
             filename=filename,
             content_type="application/pdf",
             template_id=template_id,
@@ -63,37 +63,37 @@ def register_upload(
         session,
         event_type="invoice.received",
         actor=actor,
-        invoice_id=row.id,
+        case_id=row.id,
         trace_id=row.trace_id,
         payload={"filename": filename, "bytes": len(pdf), "file_hash": row.file_hash},
     )
     return row
 
 
-def document_bytes(session: Session, invoice_id: uuid.UUID) -> bytes:
+def document_bytes(session: Session, case_id: uuid.UUID) -> bytes:
     return session.scalars(
-        select(m.Document.data).where(m.Document.invoice_id == invoice_id)
+        select(m.Document.data).where(m.Document.case_id == case_id)
     ).one()
 
 
-def begin_extraction(session: Session, invoice_id: uuid.UUID, *, actor: str = SYSTEM) -> bytes:
-    row = lock_invoice(session, invoice_id)
+def begin_extraction(session: Session, case_id: uuid.UUID, *, actor: str = SYSTEM) -> bytes:
+    row = lock_invoice(session, case_id)
     transition(session, row, S.EXTRACTING, actor=actor)
-    return document_bytes(session, invoice_id)
+    return document_bytes(session, case_id)
 
 
 def complete_extraction(
     session: Session,
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     response: ExtractionResponse,
     *,
     actor: str = SYSTEM,
-) -> m.Invoice:
-    row = lock_invoice(session, invoice_id)
-    pdf = document_bytes(session, invoice_id)
+) -> m.Case:
+    row = lock_invoice(session, case_id)
+    pdf = document_bytes(session, case_id)
 
     record_llm_call(
-        session, invoice_id=row.id, step="extract", usage=response.usage, trace_id=row.trace_id
+        session, case_id=row.id, step="extract", usage=response.usage, trace_id=row.trace_id
     )
     normalized = normalize(response.invoice, row.file_hash)
     fields, evidence_issues = check_evidence(normalized.fields, page_texts(pdf))
@@ -103,7 +103,7 @@ def complete_extraction(
     for record in fields:
         session.add(
             m.ExtractionField(
-                invoice_id=row.id,
+                case_id=row.id,
                 field=record.field,
                 value=record.value,
                 confidence=record.confidence,
@@ -140,7 +140,7 @@ def complete_extraction(
     row.tax = invoice.tax
     row.total = invoice.total
     row.lines = [
-        m.InvoiceLine(line_no=i, sku=line.sku, qty=line.qty, unit_price=line.unit_price)
+        m.CaseLine(line_no=i, sku=line.sku, qty=line.qty, unit_price=line.unit_price)
         for i, line in enumerate(invoice.lines, start=1)
     ]
     session.flush()
@@ -151,14 +151,14 @@ def complete_extraction(
 
 def fail_extraction(
     session: Session,
-    invoice_id: uuid.UUID,
+    case_id: uuid.UUID,
     *,
     error: str,
     attempts: int,
     actor: str = SYSTEM,
-) -> m.Invoice:
+) -> m.Case:
     """Park the invoice in FAILED with an inspectable dead-letter record."""
-    row = lock_invoice(session, invoice_id)
+    row = lock_invoice(session, case_id)
     transition(session, row, S.FAILED, actor=actor, payload={"error": error, "attempts": attempts})
-    session.add(m.FailedJob(invoice_id=row.id, task="extract", error=error, attempts=attempts))
+    session.add(m.FailedJob(case_id=row.id, task="extract", error=error, attempts=attempts))
     return row

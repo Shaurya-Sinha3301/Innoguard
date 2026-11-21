@@ -92,3 +92,50 @@ def test_a_malformed_manifest_is_refused_at_load(overrides):
 
 def test_decimal_values_survive_the_yaml_round_trip():
     assert M.thresholds.max_auto_amount == Decimal("10000")
+
+
+# ------------------------------------------------------------------ the expenses pack
+
+EXPENSES = get_pack("expenses")
+assert EXPENSES is not None
+
+
+def test_every_reason_the_expense_rules_can_emit_is_described():
+    from invoiceguard.packs.expenses.generator import ExpenseLabel
+
+    declared = {r.code for r in EXPENSES.manifest.reasons}
+    emitted = {
+        "UNKNOWN_EMPLOYEE", "WRONG_CARD", "UNKNOWN_CATEGORY", "CATEGORY_BLOCKED",
+        "OVER_CATEGORY_CAP", "DATE_IN_FUTURE", "CLAIM_TOO_OLD", "NO_CARD_TRANSACTION",
+        "AMOUNT_MISMATCH", "CURRENCY_MISMATCH", "DUPLICATE_CLAIM", "DUPLICATE_EXACT",
+        "HIGH_VALUE", "LOW_EXTRACTION_CONFIDENCE", "LOW_MATCH_QUALITY",
+        "EXTRACTION_INCOMPLETE", "EXTRACTION_FAILED",
+    }  # fmt: skip
+    assert emitted <= declared, sorted(emitted - declared)
+    assert {label.value for label in ExpenseLabel} - {"CLEAN"} <= declared
+
+
+def test_the_expense_manifest_numbers_are_the_ones_the_rules_use():
+    from invoiceguard.packs.expenses.models import ExpensePolicy, ExpenseTolerances
+
+    tol, policy = ExpenseTolerances(), ExpensePolicy()
+    m = EXPENSES.manifest
+    assert m.tolerances.amount_abs == tol.amount_abs
+    assert m.tolerances.date_window_days == tol.date_window_days
+    assert m.tolerances.max_claim_age_days == tol.max_claim_age_days
+    assert m.thresholds.max_auto_amount == policy.max_auto_amount
+    t = Thresholds()
+    assert m.thresholds.min_extraction_confidence == t.min_extraction_confidence
+    assert m.thresholds.min_match_quality == t.min_match_quality
+
+
+def test_the_expense_reason_texts_state_the_numbers_the_rules_use():
+    m = EXPENSES.manifest
+    text = {r.code: r.explain for r in m.reasons}
+    assert f"{m.tolerances.max_claim_age_days} days" in text["CLAIM_TOO_OLD"]
+    assert f"{m.tolerances.date_window_days} days" in text["NO_CARD_TRANSACTION"]
+
+
+def test_both_packs_name_what_a_case_is_called():
+    assert PACK.manifest.case_noun == "invoice" and EXPENSES.manifest.case_noun == "claim"
+    assert len(PACK.manifest.how_it_works) == len(EXPENSES.manifest.how_it_works) == 3

@@ -16,6 +16,7 @@ import {
   SkeletonRows,
 } from "../components/ui";
 import { age, money, percent } from "../format";
+import { usePack, useNoun } from "../packContext";
 import { primaryReasons, reasonInfo } from "../reasons";
 
 const ORIENTATION_KEY = "invoiceguard.orientationDismissed";
@@ -30,15 +31,13 @@ function readDismissed(): boolean {
 
 function Orientation() {
   const [hidden, setHidden] = useState(readDismissed);
-  if (hidden) return null;
-  const steps = [
-    { icon: ScanText, title: "A model reads the PDF", text: "Every value is stored with the exact text it came from. The model never decides." },
-    { icon: ListChecks, title: "Code checks it", text: "Three-way match against the PO and goods receipt, arithmetic, duplicates and policy." },
-    { icon: FileSearch, title: "You decide the rest", text: "Only invoices that clear every check are auto-approved. Everything else lands here, with its reasons." },
-  ];
+  const { manifest } = usePack();
+  if (hidden || !manifest || manifest.how_it_works.length === 0) return null;
+  const icons = [ScanText, ListChecks, FileSearch];
+  const steps = manifest.how_it_works.map((s, i) => ({ icon: icons[i % icons.length], ...s }));
   return (
     <Module
-      title="How InvoiceGuard decides"
+      title="How this is decided"
       extra={
         <button
           type="button"
@@ -86,8 +85,10 @@ function QueueRow({ inv, now, active }: { inv: Invoice; now: number; active: boo
           <Chip>{inv.invoice_number ?? "Unread document"}</Chip>
         </span>
         <span className="order-3 col-span-2 flex min-w-0 flex-wrap items-center gap-1.5 sm:order-none sm:col-span-1">
-          <span className="font-mono text-[13px] text-ink">{inv.vendor_id ?? "No vendor"}</span>
-          <span className="font-mono text-xs text-ink-3">{inv.po_number ?? "no PO"}</span>
+          <span className="font-mono text-[13px] text-ink">{inv.vendor_id ?? "—"}</span>
+          {(inv.pack_id ?? "invoices") === "invoices" && (
+            <span className="font-mono text-xs text-ink-3">{inv.po_number ?? "no PO"}</span>
+          )}
           {reasons.slice(0, 2).map((r) => (
             <ReasonTag key={r} code={r} title />
           ))}
@@ -103,12 +104,14 @@ function QueueRow({ inv, now, active }: { inv: Invoice; now: number; active: boo
 }
 
 export default function ReviewDesk() {
+  const { pack } = usePack();
+  const noun = useNoun();
   const queue = useQuery({
-    queryKey: ["invoices", "NEEDS_REVIEW"],
-    queryFn: () => api.listInvoices("NEEDS_REVIEW"),
+    queryKey: ["cases", pack, "NEEDS_REVIEW"],
+    queryFn: () => api.listCases(pack, "NEEDS_REVIEW"),
     refetchInterval: 5000,
   });
-  const metrics = useQuery({ queryKey: ["metrics"], queryFn: api.metrics, refetchInterval: 10000 });
+  const metrics = useQuery({ queryKey: ["metrics", pack], queryFn: () => api.metrics(pack), refetchInterval: 10000 });
   const me = useQuery({ queryKey: ["me"], queryFn: api.me, staleTime: Infinity });
   const navigate = useNavigate();
   const [reason, setReason] = useState("all");
@@ -192,7 +195,7 @@ export default function ReviewDesk() {
 
         <div className="hidden border-t border-line pt-5 lg:block">
           <div className="mb-2 flex items-center justify-between">
-            <p className="label-mono">Why invoices are waiting</p>
+            <p className="label-mono">Why {noun.many} are waiting</p>
             {reason !== "all" && (
               <button type="button" className="text-xs text-ink-2 underline hover:text-ink" onClick={() => setReason("all")}>
                 Clear filter
@@ -255,7 +258,7 @@ export default function ReviewDesk() {
             disabled={!oldest}
             onClick={() => oldest && navigate(`/invoices/${oldest.id}`)}
           >
-            Review next invoice <ArrowRight aria-hidden className="h-4 w-4" />
+            Review next {noun.one} <ArrowRight aria-hidden className="h-4 w-4" />
           </Button>
           <p className="mt-2 text-xs text-ink-2">Opens the oldest invoice. Nothing is decided until you confirm.</p>
         </div>
@@ -265,14 +268,14 @@ export default function ReviewDesk() {
       <div className="min-w-0 space-y-4">
         <Orientation />
         <label className="relative block">
-          <span className="sr-only">Search the queue by invoice number, vendor or PO</span>
+          <span className="sr-only">Search the queue by reference or {noun.counterparty.toLowerCase()}</span>
           <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
           <input
             ref={searchRef}
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={`Search ${rows.length} invoices by number, vendor or PO`}
+            placeholder={`Search ${rows.length} ${noun.many} by reference or ${noun.counterparty.toLowerCase()}`}
             className="h-12 w-full rounded-xl border border-line pl-10 pr-10 text-base placeholder:text-ink-3"
           />
           <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-line px-1.5 font-mono text-xs text-ink-3">
@@ -300,7 +303,7 @@ export default function ReviewDesk() {
           <div className="rounded-xl border border-line bg-surface">
             <Empty title={rows.length === 0 ? "Nothing waiting for you" : "No invoice matches"}>
               {rows.length === 0
-                ? "Every invoice so far either cleared all checks or has been decided."
+                ? `Every ${noun.one} so far either cleared all checks or has been decided.`
                 : "Try a different search or clear the reason filter."}
             </Empty>
           </div>
@@ -308,9 +311,9 @@ export default function ReviewDesk() {
         {shown.length > 0 && (
           <>
             <p className="label-mono">
-              {shown.length} {shown.length === 1 ? "invoice" : "invoices"} · oldest first · j / k to move, enter to open
+              {shown.length} {shown.length === 1 ? noun.one : noun.many} · oldest first · j / k to move, enter to open
             </p>
-            <ul aria-label="Invoices waiting for a decision" className="space-y-2">
+            <ul aria-label="Waiting for a decision" className="space-y-2">
               {shown.map((inv, i) => (
                 <QueueRow key={inv.id} inv={inv} now={now} active={i === cursor} />
               ))}

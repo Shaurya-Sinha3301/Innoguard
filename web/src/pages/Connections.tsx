@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { API_URL, api } from "../api";
 import { Button, Empty, ErrorNote, Module, SkeletonRows, Table, td, th } from "../components/ui";
 import { when } from "../format";
+import { usePack } from "../packContext";
 
 const AGENT_SCOPES: Array<{ scope: string; text: string }> = [
   { scope: "read", text: "Read cases, documents and metrics" },
@@ -17,11 +18,14 @@ export default function Connections() {
   const queryClient = useQueryClient();
   const principals = useQuery({ queryKey: ["principals"], queryFn: api.principals });
   const [name, setName] = useState("");
+  const { packs } = usePack();
   const [scopes, setScopes] = useState<string[]>(["read", "propose"]);
+  const [chosenPacks, setChosenPacks] = useState<string[] | null>(null);
+  const allowed = chosenPacks ?? packs.map((p) => p.id);
   const [issued, setIssued] = useState<{ name: string; key: string } | null>(null);
 
   const create = useMutation({
-    mutationFn: () => api.createPrincipal({ name: name.trim(), kind: "agent", scopes }),
+    mutationFn: () => api.createPrincipal({ name: name.trim(), kind: "agent", scopes, packs: allowed }),
     onSuccess: (row) => {
       setIssued({ name: row.name, key: row.key });
       setName("");
@@ -87,8 +91,26 @@ export default function Connections() {
                 </label>
               ))}
             </fieldset>
+            {packs.length > 1 && (
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-semibold">Which workflows</legend>
+                {packs.map((p) => (
+                  <label key={p.id} className="flex items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={allowed.includes(p.id)}
+                      onChange={() =>
+                        setChosenPacks(allowed.includes(p.id) ? allowed.filter((x) => x !== p.id) : [...allowed, p.id])
+                      }
+                      className="mt-1 accent-[hsl(var(--accent))]"
+                    />
+                    <span>{p.name}</span>
+                  </label>
+                ))}
+              </fieldset>
+            )}
             <ErrorNote error={create.error} />
-            <Button type="submit" disabled={name.trim().length < 2 || scopes.length === 0 || create.isPending}>
+            <Button type="submit" disabled={name.trim().length < 2 || scopes.length === 0 || allowed.length === 0 || create.isPending}>
               Issue key
             </Button>
           </form>

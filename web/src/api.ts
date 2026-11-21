@@ -107,6 +107,7 @@ export type Invoice = {
   status: string;
   version: number;
   created_at: string;
+  pack_id?: string;
   reasons?: string[];
 };
 
@@ -142,6 +143,8 @@ export type InvoiceDetail = Invoice & {
     created_at: string;
   }[];
   timeline: AuditEvent[];
+  data?: Record<string, string>;
+  context?: ExpenseContext;
   llm_calls: {
     step: string;
     provider: string;
@@ -152,6 +155,15 @@ export type InvoiceDetail = Invoice & {
     tokens_per_second: string | null;
     cost_usd: string;
   }[];
+};
+
+export type ExpenseContext = {
+  employee?: { employee_id: string; name: string; card_last4: string } | null;
+  category?: { category: string; cap: string; blocked: boolean } | null;
+  card_transaction?: { txn_id: string; merchant: string; txn_date: string; amount: string; currency: string; clean: boolean } | null;
+  claim?: { employee_id: string; merchant: string; expense_date: string; card_last4: string; category: string; total: string; currency: string };
+  submitted_on?: string;
+  max_auto_amount?: string;
 };
 
 export type ExtractionField = {
@@ -200,7 +212,11 @@ export type MetricsSummary = {
 import type { Manifest } from "./pack";
 
 export const api = {
+  packs: () => request<{ id: string; name: string; description: string }[]>("/packs"),
   pack: (id: string) => request<Manifest>(`/packs/${id}`),
+  listCases: (pack: string, status?: string) =>
+    request<Invoice[]>(`/cases?limit=200&pack=${encodeURIComponent(pack)}${status ? `&status=${encodeURIComponent(status)}` : ""}`),
+  caseDetail: (id: string) => request<InvoiceDetail>(`/cases/${id}`),
   me: () => request<Me>("/me"),
   suggestions: (id: string) => request<Suggestion[]>(`/invoices/${id}/suggestions`),
   dismissSuggestion: (id: string, suggestionId: number) =>
@@ -209,7 +225,7 @@ export const api = {
   issueGrant: (id: string, ttlMinutes: number) =>
     request<Grant>(`/invoices/${id}/grants`, json({ ttl_minutes: ttlMinutes })),
   principals: () => request<PrincipalRow[]>("/principals"),
-  createPrincipal: (body: { name: string; kind: "agent" | "human"; scopes: string[] }) =>
+  createPrincipal: (body: { name: string; kind: "agent" | "human"; scopes: string[]; packs?: string[] }) =>
     request<PrincipalRow & { key: string }>("/principals", json(body)),
   disablePrincipal: (id: string) => request<PrincipalRow>(`/principals/${id}/disable`, { method: "POST" }),
   listInvoices: (status?: string) =>
@@ -227,10 +243,10 @@ export const api = {
     request<{ outcome: string; idempotency_key: string }>(`/invoices/${id}/post`, { method: "POST" }),
   failedJobs: () => request<FailedJob[]>("/failed-jobs"),
   replay: (id: string) => request<Invoice>(`/invoices/${id}/replay`, { method: "POST" }),
-  metrics: () => request<MetricsSummary>("/metrics/summary"),
-  upload: (file: File) => {
+  metrics: (pack?: string) => request<MetricsSummary>(`/metrics/summary${pack ? `?pack=${encodeURIComponent(pack)}` : ""}`),
+  upload: (file: File, pack = "invoices") => {
     const form = new FormData();
     form.append("file", file);
-    return request<Invoice>("/documents", { method: "POST", body: form });
+    return request<Invoice>(`/documents?pack=${encodeURIComponent(pack)}`, { method: "POST", body: form });
   },
 };

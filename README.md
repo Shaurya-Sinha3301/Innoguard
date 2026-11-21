@@ -6,8 +6,9 @@ doubtful to a person, and keeps an append-only audit trail that can reconstruct 
 decision.
 
 The first workflow (a *pack*) is **accounts payable**: supplier invoices reconciled against
-purchase orders **and** goods receipts (three-way matching). The platform around it is built
-so other workflows can be added as packs, and so that outside agents (Claude Desktop, Claude
+purchase orders **and** goods receipts (three-way matching). The second is **expense
+claims**: a receipt checked against the company card statement and the spending policy. Both
+run on the same core; other workflows are added as packs, and so that outside agents (Claude Desktop, Claude
 Code, any MCP client) can read, submit and *suggest*, but never approve.
 
 The model only reads the document. Arithmetic, matching, policy and posting are ordinary,
@@ -27,9 +28,11 @@ approval from a person.
 | Auth: scoped principals, hashed agent keys, bearer tokens, admin API, Connections page | Built |
 | Core made case-based (`invoices` table became `cases` with a `pack_id`) | Built |
 | Remote MCP server at `/mcp`: scoped tools, agent suggestions, per-case posting grants | Built |
-| Second pack: expense reports | Next |
-| OAuth sign-in for MCP clients | Planned |
-| Credit notes, multi-currency, near-duplicates, calibration, tracing export, worker scaling | Planned |
+| Core is pack-driven: extraction, normalisation, reconciliation and the job go through a `Pack` interface | Built |
+| Second pack: expense reports (receipt vs card statement vs policy), with its own evaluation gates | Built |
+| Pack switcher and pack-aware UI, API, metrics and MCP tools | Built |
+| OAuth sign-in for MCP clients | Next |
+| Credit notes, multi-currency, near-duplicates, calibration, tracing export, worker scaling, OCR | Planned |
 
 Details and ordering are in [Release 2](#release-2).
 
@@ -141,6 +144,7 @@ Design stance, in one line each:
 | Posting service | The only writer to the system of record | Post without a valid approval |
 | Outbox + dispatcher + worker | Reliable background work, retries, dead-letter | Lose a job when Redis is down |
 | MCP server | Let agents read, submit and propose through the same rules | Approve or post on its own |
+| Pack registry | Know which workflows are installed; hand the core the right pack for a case | Contain workflow rules itself |
 
 ### Deployment
 
@@ -217,6 +221,22 @@ erDiagram
         numeric amount
         timestamptz expires_at
         timestamptz used_at
+    }
+    employees {
+        text employee_id
+        text card_last4
+    }
+    expense_categories {
+        text category
+        numeric cap
+        bool blocked
+    }
+    card_transactions {
+        text txn_id
+        text card_last4
+        text merchant
+        date txn_date
+        numeric amount
     }
     outbox {
         bigint id
@@ -385,14 +405,15 @@ next request.
 | `GET /health` | none | Postgres and Redis checks |
 | `GET /me` | any key | Name, kind, scopes, packs |
 | `GET /packs`, `GET /packs/{id}` | `read` | Installed packs and their manifests |
+| `GET /cases?pack=`, `GET /cases/{id}` | `read` | Cases of one or every pack, with what each was checked against |
 | `POST /invoices` | `submit` | Submit structured data |
-| `POST /documents` | `submit` | Upload a PDF |
+| `POST /documents?pack=` | `submit` | Upload a PDF into a pack (default invoices) |
 | `GET /invoices`, `GET /invoices/{id}` | `read` | Queue and detail |
 | `GET /invoices/{id}/document`, `/extraction` | `read` | Source file; values with evidence |
 | `POST /invoices/{id}/approve`, `/reject`, `/edit` | `review` | Decisions, bound to `expected_version` |
 | `POST /invoices/{id}/replay` | `review` | Re-run extraction for a failed case |
 | `POST /invoices/{id}/post` | `post` | Post an approved case |
-| `GET /failed-jobs`, `GET /metrics/summary` | `read` | Operations and metrics |
+| `GET /failed-jobs`, `GET /metrics/summary?pack=` | `read` | Operations and metrics, for one pack or all |
 | `GET/POST /invoices/{id}/suggestions` | `read` / `propose` | Agent suggestions on a case |
 | `POST /invoices/{id}/suggestions/{sid}/dismiss` | `review` | A person dismisses a suggestion |
 | `GET/POST /invoices/{id}/grants` | `read` / `review` | List grants; a person releases an approved case for an agent to post |
@@ -443,18 +464,60 @@ not spent. Every tool call and every grant event is audited under `mcp:<agent>`.
 
 ### Packs (how a workflow is described)
 
+A pack is a **manifest** (declarative) plus **rules** (Python), behind one interface. The
+core never names a pack: a test fails if the shared workflow, extraction or job code contains
+a pack's name.
+
 ```mermaid
 flowchart LR
-    M[manifest.yaml<br/>fields, reasons, thresholds,<br/>tolerances, queue + detail layout] --> V[Pydantic validation<br/>at start-up]
+    subgraph Pack
+        M[manifest.yaml<br/>fields, reasons, thresholds,<br/>tolerances, layout, wording]
+        R[Python rules<br/>normalise, reconcile, lookups]
+        S[Extraction schema<br/>and prompts]
+    end
+    M --> V[Validated at start-up]
     V --> REG[Pack registry]
+    R --> REG
+    S --> REG
+    REG --> CORE[Core: extraction, workflow,<br/>approvals, posting, jobs]
     REG --> API2[GET /packs/id]
-    API2 --> UI2[UI: reason labels,<br/>tolerances, layout]
-    R[Python rules<br/>match, validate, policy] -.tested against.-> M
+    API2 --> UI2[UI: wording, reasons,<br/>tolerances]
+    REG --> MCPT[MCP tools: lookups,<br/>pack allow-list]
 ```
 
-A manifest carries no logic. Rules stay as Python so a change to them is reviewed like any
-code change. Tests assert every reason code the rules can emit is described in the manifest
-and that the manifest's numbers equal the ones the code uses.
+What the core asks of a pack (`packs/base.py`):
+
+| Method | Purpose |
+| --- | --- |
+| `extraction_model`, `system_prompt`, `user_prompt` | What the model must return, and how it is told |
+| `normalize(extracted, file_hash)` | Type the strings; refuse what is ambiguous |
+| `apply_extracted(row, value)` | Write the typed value onto the case |
+| `reconcile(session, row, confidence)` | Check against reference data; return a decision and reasons |
+| `context(session, row)` | What the case was checked against, for the case page |
+| `lookup(session, name, key)` | Read-only reference data for agents |
+
+The manifest carries no logic. Tests assert every reason code a pack's rules can emit is
+described in its manifest, that the manifest's numbers equal the ones the code uses, and that
+reason texts state those numbers. Adding a pack: [docs/writing-a-pack.md](docs/writing-a-pack.md).
+
+### The expenses pack
+
+A claim is an employee's expense form with a receipt. The model reads employee, merchant,
+date, currency, total, tax, card digits and category; code then checks it.
+
+| Check | Reason | Hard? |
+| --- | --- | --- |
+| Employee is on the list; card is theirs | `UNKNOWN_EMPLOYEE`, `WRONG_CARD` | Yes |
+| Category exists, is reimbursable, is under its cap | `UNKNOWN_CATEGORY`, `CATEGORY_BLOCKED`, `OVER_CATEGORY_CAP` | Yes |
+| Not dated in the future; not older than 60 days | `DATE_IN_FUTURE`, `CLAIM_TOO_OLD` | Yes |
+| A card statement line matches merchant, card and date (3 days) and the amount (0.01) | `NO_CARD_TRANSACTION`, `AMOUNT_MISMATCH`, `CURRENCY_MISMATCH` | Yes |
+| Same person, merchant, day and amount already claimed | `DUPLICATE_CLAIM` (same file: `DUPLICATE_EXACT`, rejected) | Yes |
+| Above the auto-approval limit (5,000) | `HIGH_VALUE` | Yes |
+
+The card statement is an independent record, so it also catches a misread: if the model reads
+the total wrong but quotes real text from the document (so the evidence check passes), the
+statement disagrees and a person still sees it. The rules and thresholds are assumptions for a
+synthetic company, and are meant to be confirmed with the people who run the policy.
 
 ### Configuration
 
@@ -514,6 +577,12 @@ with simulated extractions, so it needs no model key. To extract with a real mod
 `EXTRACTION_MODE=live` and `GROQ_API_KEY` (default `openai/gpt-oss-20b`), or
 `EXTRACTION_PROVIDER=anthropic` with a Claude model and `ANTHROPIC_API_KEY`.
 
+Load demo expense claims too, then use the **Workflow** switcher in the top bar:
+
+```bash
+docker compose exec api python -m invoiceguard.packs.expenses.demo_data --count 12
+```
+
 Health check: `curl http://localhost:8000/health`
 
 Run the tests (they build a throwaway Postgres database from the real migrations, so Compose
@@ -531,6 +600,14 @@ Keyboard on the review desk: `/` search, `j` / `k` move, `Enter` open.
 cd backend
 python -m invoiceguard.evaluation.runner --extractor oracle --gate
 python -m invoiceguard.evaluation.runner --extractor noisy --gate
+```
+
+The expenses pack has its own locked set (216 cases, one receipt layout held out) and the
+same gates:
+
+```bash
+python -m invoiceguard.packs.expenses.evaluation --extractor oracle --gate
+python -m invoiceguard.packs.expenses.evaluation --extractor noisy --gate
 ```
 
 Oracle and noisy runs test the controls with simulated extraction; they are not model
@@ -557,7 +634,8 @@ outside agents work through it safely.
 | Auth | Scoped principals, hashed agent keys, bearer tokens, admin API, Connections page | Built |
 | Core made case-based | `invoices` became `cases` with `pack_id` and `data`; HTTP routes under `/invoices` unchanged | Built |
 | Remote MCP server | Streamable HTTP at `/mcp`; list, read, submit, propose; posting only with a short-lived per-case grant a person issues | Built |
-| Expense-report pack | Receipt vs card transaction vs policy; same core, no pack-specific branches | Next |
+| Core pack-driven | `Pack` interface; the core never names a pack (tested) | Built |
+| Expense-report pack | Receipt vs card statement vs policy; same core, no pack-specific branches; locked set and gates | Built |
 | OAuth for MCP clients | Resource-server only; the API-key verifier is the interim | Planned |
 | Credit notes, multi-currency | Netting, returns, rate date and tolerance | Planned |
 | Near-duplicate detection | Normalised amount, date, PO and lines as a review signal | Planned |
@@ -568,7 +646,7 @@ outside agents work through it safely.
 
 | Path | Contents |
 | --- | --- |
-| `backend/src/invoiceguard/packs` | Pack manifest schema, registry, the invoice pack |
+| `backend/src/invoiceguard/packs` | Pack interface, manifest schema, registry; `invoices/` and `expenses/` (rules, generator, evaluation) |
 | `backend/src/invoiceguard/domain` | Matching, validation, duplicates, policy, decision (no I/O) |
 | `backend/src/invoiceguard/workflow` | State machine, approvals, posting service, audit log |
 | `backend/src/invoiceguard/extraction` | Model clients, normaliser, evidence check, cost metrics |
@@ -598,8 +676,12 @@ outside agents work through it safely.
 - Clean PDFs only; no scanned or handwritten invoices yet.
 - Reviewer identity is a static API key and agent keys are issued keys; there is no SSO or
   OAuth yet. MCP clients that only support browser sign-in cannot connect.
-- Only the invoices pack is exposed. The data model and manifest are pack-ready; the second
-  pack (expense reports) is not built.
+- The expense rules are assumptions for a synthetic company; they need confirming with the
+  people who run a real policy. One currency per claim; no foreign-exchange handling yet.
+- Expense claims reuse the invoice-era columns for their reference and merchant
+  (`invoice_number`, `vendor_id`); the pack's own fields live in the case's `data`.
+- Action routes (`approve`, `reject`, `post`, grants) keep the `/invoices/{id}` prefix and work
+  for a case of any pack; `/cases` serves the reads.
 - No posting reversal; a wrong posting is handled outside the system (see the runbook).
 - The model's confidence is self-reported and uncalibrated; the evidence check is the
   independent control.

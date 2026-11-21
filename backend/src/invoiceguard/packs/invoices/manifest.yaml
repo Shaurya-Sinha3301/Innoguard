@@ -3,6 +3,12 @@ name: Supplier invoices
 version: 1
 description: Reads a supplier invoice, matches it to the purchase order and goods receipts, and sends anything doubtful to a person.
 document: Supplier invoice (PDF)
+case_noun: invoice
+counterparty: Vendor
+how_it_works:
+  - { title: A model reads the PDF, text: "Every value is stored with the exact text it came from. The model never decides." }
+  - { title: Code checks it, text: "Three-way match against the PO and goods receipt, arithmetic, duplicates and policy." }
+  - { title: You decide the rest, text: "Only invoices that clear every check are auto-approved. Everything else lands here, with its reasons." }
 
 fields:
   - { name: invoice_number, label: Invoice number }

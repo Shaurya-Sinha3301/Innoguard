@@ -1,6 +1,6 @@
 /** Plain-language names and explanations for the reason codes the backend records. The loaded
  * pack manifest is the source of truth; the table below is only the fallback before it loads. */
-import { getPack } from "./pack";
+import { allManifests, getPack } from "./pack";
 
 type Reason = { label: string; explain: string };
 
@@ -32,15 +32,16 @@ const PREFIXED: Record<string, Reason> = {
 };
 
 export function reasonInfo(code: string): Reason {
-  const pack = getPack();
-  const declared = pack?.reasons.find((r) => r.code === code);
-  if (declared) return declared;
-  if (REASONS[code] && !pack) return REASONS[code];
+  const packs = [getPack(), ...allManifests()].filter((m): m is NonNullable<typeof m> => m !== null);
+  for (const pack of packs) {
+    const declared = pack.reasons.find((x) => x.code === code);
+    if (declared) return declared;
+  }
+  if (packs.length === 0 && REASONS[code]) return REASONS[code];
   const [prefix, field] = code.split(":");
-  const prefixed = pack?.reason_prefixes.find((r) => r.code === prefix) ?? PREFIXED[prefix];
+  const prefixed = packs.flatMap((m) => m.reason_prefixes).find((x) => x.code === prefix) ?? PREFIXED[prefix];
   if (field && prefixed) {
-    const base = prefixed;
-    return { label: `${base.label}: ${field}`, explain: `${base.explain} (${field}).` };
+    return { label: `${prefixed.label}: ${field}`, explain: `${prefixed.explain} (${field}).` };
   }
   return { label: code.replace(/_/g, " ").toLowerCase(), explain: "" };
 }

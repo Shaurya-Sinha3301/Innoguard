@@ -4,7 +4,7 @@ import { useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { API_URL, api, ApiError, getApiKey, setApiKey } from "./api";
 import { Button, cx, ErrorNote, Module } from "./components/ui";
-import { setPack } from "./pack";
+import { PackProvider, usePack } from "./packContext";
 import Connections from "./pages/Connections";
 import FailedJobs from "./pages/FailedJobs";
 import InvoiceDetailPage from "./pages/InvoiceDetail";
@@ -58,7 +58,7 @@ function Brand() {
       </span>
       <span className="leading-tight">
         <span className="block font-display text-md font-bold tracking-tight">InvoiceGuard</span>
-        <span className="label-mono block">Accounts payable</span>
+        <span className="label-mono block">Review desk</span>
       </span>
     </span>
   );
@@ -163,17 +163,8 @@ function NavTab({ to, icon: Icon, label, count, alert }: { to: string; icon: typ
 
 function Shell({ onSignOut }: { onSignOut: () => void }) {
   const me = useQuery({ queryKey: ["me"], queryFn: api.me, staleTime: Infinity });
-  // The pack manifest supplies reason texts, tolerances and thresholds; see pack.ts.
-  useQuery({
-    queryKey: ["pack", "invoices"],
-    queryFn: async () => {
-      const manifest = await api.pack("invoices");
-      setPack(manifest);
-      return manifest;
-    },
-    staleTime: Infinity,
-  });
-  const metrics = useQuery({ queryKey: ["metrics"], queryFn: api.metrics, refetchInterval: 10000 });
+  const { pack, setPack, packs } = usePack();
+  const metrics = useQuery({ queryKey: ["metrics", pack], queryFn: () => api.metrics(pack), refetchInterval: 10000 });
   const review = metrics.data?.invoices_by_status.NEEDS_REVIEW ?? 0;
   const failed = metrics.data?.operations.open_failed_jobs ?? 0;
 
@@ -186,7 +177,7 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
           </div>
           <nav aria-label="Main" className="order-last -mx-2 flex w-full overflow-x-auto md:order-none md:mx-0 md:w-auto">
             <NavTab to="/review" icon={TriangleAlert} label="Review queue" count={review} alert />
-            <NavTab to="/invoices" icon={Files} label="All invoices" />
+            <NavTab to="/invoices" icon={Files} label="All cases" />
             <NavTab to="/failed" icon={FileStack} label="Failed jobs" count={failed} alert />
             <NavTab to="/metrics" icon={BarChart3} label="Metrics" />
             <NavTab to="/upload" icon={UploadIcon} label="Upload" />
@@ -200,6 +191,23 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
               <span className="hidden text-sm text-ink-2 sm:inline">
                 <b className="font-semibold text-ink">{me.data.name}</b>
               </span>
+            )}
+            {packs.length > 1 && (
+              <label className="flex items-center gap-2 text-sm text-ink-2">
+                <span className="label-mono hidden md:inline">Workflow</span>
+                <select
+                  aria-label="Workflow"
+                  value={pack}
+                  onChange={(e) => setPack(e.target.value)}
+                  className="h-9 rounded-lg border border-line px-2 text-sm font-medium text-ink"
+                >
+                  {packs.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
             <ThemeToggle />
             <Button variant="ghost" onClick={onSignOut} aria-label="Sign out">
@@ -231,12 +239,14 @@ export default function App() {
   const queryClient = useQueryClient();
   if (!signedIn) return <SignIn onSignIn={() => setSignedIn(true)} />;
   return (
-    <Shell
-      onSignOut={() => {
-        setApiKey(null);
-        queryClient.clear();
-        setSignedIn(false);
-      }}
-    />
+    <PackProvider>
+      <Shell
+        onSignOut={() => {
+          setApiKey(null);
+          queryClient.clear();
+          setSignedIn(false);
+        }}
+      />
+    </PackProvider>
   );
 }

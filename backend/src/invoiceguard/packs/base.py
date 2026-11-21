@@ -54,6 +54,11 @@ class Tolerances(_Spec):
     max_claim_age_days: int = 0
 
 
+class HowStep(_Spec):
+    title: str
+    text: str
+
+
 class Manifest(_Spec):
     id: str
     name: str
@@ -61,6 +66,11 @@ class Manifest(_Spec):
     description: str
     # The document this pack reads, shown on the upload screen.
     document: str
+    # How the UI names things: one case ("invoice", "claim"), and the other party to it.
+    case_noun: str = "case"
+    counterparty: str = "Counterparty"
+    # Three short steps shown to a new reviewer: what reads, what checks, what you decide.
+    how_it_works: tuple["HowStep", ...] = ()
     fields: tuple[FieldSpec, ...]
     reasons: tuple[ReasonSpec, ...]
     # Reason codes that carry a field name after a colon, such as MISSING_FIELD:total.

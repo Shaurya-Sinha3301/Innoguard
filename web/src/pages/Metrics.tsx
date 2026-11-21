@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
 import { Empty, ErrorNote, Module, num, SkeletonRows, StatusBadge, Table, td, th } from "../components/ui";
 import { isSimulated, percent } from "../format";
+import { usePack } from "../packContext";
 import { reasonInfo } from "../reasons";
 
 export default function Metrics() {
-  const metrics = useQuery({ queryKey: ["metrics"], queryFn: api.metrics, refetchInterval: 10000 });
+  const { pack } = usePack();
+  const metrics = useQuery({ queryKey: ["metrics", pack], queryFn: () => api.metrics(pack), refetchInterval: 10000 });
   if (metrics.error) return <ErrorNote error={metrics.error} />;
   if (!metrics.data) return <SkeletonRows rows={10} cols={4} />;
   const m = metrics.data;

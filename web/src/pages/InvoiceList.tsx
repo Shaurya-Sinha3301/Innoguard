@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { Empty, ErrorNote, Module, num, Row, Segmented, SkeletonRows, StatusBadge, Table, td, th } from "../components/ui";
 import { money, when } from "../format";
+import { useNoun, usePack } from "../packContext";
 import { primaryReasons, reasonInfo } from "../reasons";
 
 const FILTERS = [
@@ -18,26 +19,28 @@ const FILTERS = [
 
 export default function InvoiceList() {
   const [status, setStatus] = useState("");
+  const { pack } = usePack();
+  const noun = useNoun();
   const query = useQuery({
-    queryKey: ["invoices", status],
-    queryFn: () => api.listInvoices(status || undefined),
+    queryKey: ["cases", pack, status],
+    queryFn: () => api.listCases(pack, status || undefined),
     refetchInterval: 5000,
   });
 
   return (
-    <Module title="All invoices" count={query.data?.length}>
+    <Module title={`All ${noun.many}`} count={query.data?.length}>
       <div className="border-b border-line px-3 py-2">
         <Segmented label="Filter by status" value={status} onChange={setStatus} options={FILTERS} />
       </div>
       <ErrorNote error={query.error} />
       {query.isLoading && <SkeletonRows rows={12} cols={6} />}
-      {query.data?.length === 0 && <Empty title="No invoices match">Try another status, or upload a document.</Empty>}
+      {query.data?.length === 0 && <Empty title={`No ${noun.many} match`}>Try another status, or upload a document.</Empty>}
       {query.data && query.data.length > 0 && (
-        <Table label="Invoices, newest first">
+        <Table label="Cases, newest first">
           <thead>
             <tr>
-              <th className={th}>Invoice</th>
-              <th className={th}>Vendor</th>
+              <th className={th}>Reference</th>
+              <th className={th}>{noun.counterparty}</th>
               <th className={th}>PO</th>
               <th className={th}>Status</th>
               <th className={th}>Last decision reason</th>

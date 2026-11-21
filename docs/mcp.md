@@ -50,11 +50,11 @@ the first call after a quiet period can take up to a minute.
 | Tool | Scope | What it does |
 | --- | --- | --- |
 | `list_packs_available`, `describe_pack` | `read` | The workflows, their fields, reasons, thresholds, tolerances |
-| `list_cases` | `read` | Cases, newest first, filter by status or vendor (at most 50) |
+| `list_cases` | `read` | A pack's cases (`pack`: `invoices` or `expenses`), newest first, filter by status or vendor/merchant (at most 50) |
 | `get_case` | `read` | Header, lines, why it was flagged, values read from the document with the text they came from, approvals, suggestions |
 | `get_audit` | `read` | Every event on a case: who, what, when |
-| `lookup` | `read` | Reference data: `vendor`, `purchase_order`, `goods_receipts`, `vendor_invoices` |
-| `submit_document` | `submit` | Send a PDF (base64) for extraction and checking |
+| `lookup` | `read` | A pack's reference data. invoices: `vendor`, `purchase_order`, `goods_receipts`, `vendor_invoices`. expenses: `employee`, `category`, `card_transactions` |
+| `submit_document` | `submit` | Send a PDF (base64) into a pack (`pack` defaults to invoices) |
 | `propose_decision` | `propose` | `approve`, `reject` or `hold`, with a rationale, for a case waiting for review |
 | `post_case` | `post` | Post an approved case. Needs `grant_id` |
 
@@ -102,7 +102,7 @@ that only support browser sign-in cannot connect; clients that accept a header c
 
 ## Limits worth knowing
 
-- One pack (supplier invoices) is exposed today. Tools take the pack from the key's allow-list
-  so a second pack arrives without changing the tool set.
+- A key is issued for specific packs. Tools refuse a pack, or a case belonging to a pack, that
+  the key was not issued for. A key for invoices cannot read an expense claim.
 - A tool that is refused for a missing scope returns a tool error, not an HTTP 403.
 - stdio mode (`python -m invoiceguard.mcp_server.server`) has no sign-in and read tools only.

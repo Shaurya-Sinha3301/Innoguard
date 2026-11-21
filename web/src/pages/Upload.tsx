@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { Button, cx, ErrorNote, Module } from "../components/ui";
+import { useNoun, usePack } from "../packContext";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -12,7 +13,9 @@ export default function Upload() {
   const [problem, setProblem] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const input = useRef<HTMLInputElement>(null);
-  const upload = useMutation({ mutationFn: (f: File) => api.upload(f) });
+  const { pack, manifest } = usePack();
+  const noun = useNoun();
+  const upload = useMutation({ mutationFn: (f: File) => api.upload(f, pack) });
 
   function choose(f: File | undefined) {
     upload.reset();
@@ -31,7 +34,7 @@ export default function Upload() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-12">
-      <Module title="Upload an invoice" className="lg:col-span-7" bodyClassName="space-y-3 p-3">
+      <Module title={`Upload ${noun.one === "invoice" ? "an" : "a"} ${noun.one}`} className="lg:col-span-7" bodyClassName="space-y-3 p-3">
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -55,7 +58,7 @@ export default function Upload() {
               choose a file
             </button>
           </p>
-          <p className="text-xs text-ink-2">PDF only, up to 5 MB.</p>
+          <p className="text-xs text-ink-2">{manifest ? `${manifest.document}, ` : "PDF only, "}up to 5 MB.</p>
           <input
             ref={input}
             type="file"

@@ -33,6 +33,7 @@ import {
   th,
 } from "../components/ui";
 import { clock, humanize, isSimulated, money, qty, when } from "../format";
+import ExpenseCheck from "../components/ExpenseCheck";
 import { getPack, lowConfidence, priceTolerance } from "../pack";
 import { reasonInfo } from "../reasons";
 
@@ -490,8 +491,12 @@ function AgentActivity({ inv }: { inv: InvoiceDetail }) {
 
 export default function InvoiceDetailPage() {
   const { id = "" } = useParams();
-  const invoice = useQuery({ queryKey: ["invoice", id], queryFn: () => api.invoice(id), refetchInterval: 4000 });
-  const queue = useQuery({ queryKey: ["invoices", "NEEDS_REVIEW"], queryFn: () => api.listInvoices("NEEDS_REVIEW") });
+  const invoice = useQuery({ queryKey: ["invoice", id], queryFn: () => api.caseDetail(id), refetchInterval: 4000 });
+  const casePack = invoice.data?.pack_id ?? "invoices";
+  const queue = useQuery({
+    queryKey: ["cases", casePack, "NEEDS_REVIEW"],
+    queryFn: () => api.listCases(casePack, "NEEDS_REVIEW"),
+  });
   // The next invoice after this one in the oldest-first queue, if this one is in it.
   const ordered = [...(queue.data ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
   const at = ordered.findIndex((r) => r.id === id);
@@ -502,6 +507,9 @@ export default function InvoiceDetailPage() {
   const inv = invoice.data;
   const reasons = inv.reasons;
   const reviewing = inv.status === "NEEDS_REVIEW";
+  const manifest = getPack(inv.pack_id ?? "invoices");
+  const isInvoice = (inv.pack_id ?? "invoices") === "invoices";
+  const noun = manifest ? manifest.case_noun.charAt(0).toUpperCase() + manifest.case_noun.slice(1) : "Case";
 
   return (
     <div className="space-y-4">
@@ -511,14 +519,19 @@ export default function InvoiceDetailPage() {
 
       <section aria-label="Invoice summary" className="flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-line bg-surface p-6">
         <div className="min-w-0">
-          <p className="label-mono">Invoice</p>
+          <p className="label-mono">{noun}</p>
           <h1 className="mt-1 break-all font-display text-2xl font-bold tracking-tight">
             {inv.invoice_number ?? "Uploaded document"}
           </h1>
           <ul className="mt-3 flex flex-wrap gap-2 text-sm">
             {[
-              ["Vendor", inv.vendor_id ?? "—"],
-              ["PO", inv.po_number ?? "—"],
+              [manifest?.counterparty ?? "Counterparty", inv.vendor_id ?? "—"],
+              ...(isInvoice
+                ? [["PO", inv.po_number ?? "—"]]
+                : [
+                    ["Employee", inv.data?.employee_id ?? "—"],
+                    ["Category", inv.data?.category ?? "—"],
+                  ]),
               ["Version", String(inv.version)],
               ["Received", when(inv.created_at)],
             ].map(([k, v]) => (
@@ -561,9 +574,15 @@ export default function InvoiceDetailPage() {
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-12">
-        <Module icon={Boxes} title="Three-way match" className="lg:col-span-8" extra={<span className="font-mono text-xs text-ink-2">{inv.purchase_order?.po_number ?? ""}</span>}>
-          <ThreeWayMatch inv={inv} />
-        </Module>
+        {isInvoice ? (
+          <Module icon={Boxes} title="Three-way match" className="lg:col-span-8" extra={<span className="font-mono text-xs text-ink-2">{inv.purchase_order?.po_number ?? ""}</span>}>
+            <ThreeWayMatch inv={inv} />
+          </Module>
+        ) : (
+          <Module icon={Boxes} title="Checked against" className="lg:col-span-8">
+            <ExpenseCheck inv={inv} />
+          </Module>
+        )}
         <div className="space-y-4 lg:col-span-4">
           <Module icon={Gavel} title="Decision">
             <Decision inv={inv} />

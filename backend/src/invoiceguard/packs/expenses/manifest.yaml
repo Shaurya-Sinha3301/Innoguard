@@ -3,6 +3,12 @@ name: Expense claims
 version: 1
 description: Reads an employee's expense claim and receipt, checks it against the company card statement and spending policy, and sends anything doubtful to a person. The rules are assumptions for a synthetic company, to be confirmed with the people who run the policy.
 document: Expense claim with receipt (PDF)
+case_noun: claim
+counterparty: Merchant
+how_it_works:
+  - { title: A model reads the claim, text: "Every value is stored with the exact text it came from. The model never decides." }
+  - { title: Code checks it, text: "Receipt against the card statement and the spending policy, duplicates and the age of the claim." }
+  - { title: You decide the rest, text: "Only claims that clear every check are auto-approved. Everything else lands here, with its reasons." }
 
 fields:
   - { name: employee_id, label: Employee }

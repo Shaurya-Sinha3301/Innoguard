@@ -258,3 +258,31 @@ def test_creating_an_account_and_a_key_is_audited(client, session_factory):
     with session_factory() as session:
         events = session.scalars(sa.select(m.AuditEvent.event_type).order_by(m.AuditEvent.id)).all()
     assert events == ["account.created", "principal.created"]
+
+
+# ------------------------------------------------------------------ who is an administrator
+
+
+def test_a_hosted_database_never_makes_the_first_arrival_an_administrator(client, monkeypatch):
+    monkeypatch.setattr(settings, "database_url", "postgresql+psycopg://u:p@ep-x.neon.tech/db")
+    first = signup(client, "Asha").json()
+    assert first["user"]["is_admin"] is False
+    me = client.get("/me", headers=bearer(first["token"])).json()
+    assert "admin" not in me["scopes"]
+
+
+def test_naming_an_email_later_promotes_an_account_that_already_exists(client, monkeypatch):
+    first = signup(client, "Boss", email="boss@example.com").json()
+    signup(client, "Other")
+    monkeypatch.setattr(settings, "admin_emails", "boss@example.com")
+    me = client.get("/me", headers=bearer(first["token"])).json()
+    assert "admin" in me["scopes"]
+    assert client.get("/users", headers=bearer(first["token"])).status_code == 200
+
+
+def test_an_account_made_an_administrator_at_signup_stays_one(client, monkeypatch):
+    """The flag is stored when the account is created; ADMIN_EMAILS can only add to it."""
+    monkeypatch.setattr(settings, "admin_emails", "boss@example.com")
+    boss = signup(client, "Boss", email="boss@example.com").json()
+    monkeypatch.setattr(settings, "admin_emails", "")
+    assert "admin" in client.get("/me", headers=bearer(boss["token"])).json()["scopes"]

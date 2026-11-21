@@ -15,6 +15,7 @@ import redis
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,7 @@ from invoiceguard.api.auth import (
     SCOPES,
     Principal,
     current_principal,
+    designated_admin_emails,
     hash_key,
     hash_password,
     key_scopes_for,
@@ -99,13 +101,14 @@ class KeyCreated(KeyOut):
 
 
 def _user_out(user: m.User) -> dict[str, object]:
+    admin = user.is_admin or user.email in designated_admin_emails()
     return {
         "id": user.id,
         "email": user.email,
         "name": user.name,
         "scopes": sorted(user.scopes),
         "packs": user.packs,
-        "is_admin": user.is_admin,
+        "is_admin": admin,
         "disabled": user.disabled,
         "last_login_at": user.last_login_at,
     }
@@ -159,10 +162,19 @@ def _start_session(session: Session, user: m.User) -> tuple[str, datetime]:
     return token, expires
 
 
+_LOCAL_DATABASE_HOSTS = {"localhost", "127.0.0.1", "::1", "postgres"}
+
+
 def _is_first_admin(session: Session, email: str) -> bool:
-    designated = {e.strip().lower() for e in settings.admin_emails.split(",") if e.strip()}
+    """Who becomes an administrator on signing up. ADMIN_EMAILS names them. Without it, the
+    very first account is the administrator, but only on a local database: a hosted
+    deployment never hands administrator to whoever happens to arrive first."""
+    designated = designated_admin_emails()
     if designated:
         return email in designated
+    host = make_url(settings.database_url).host or ""
+    if host not in _LOCAL_DATABASE_HOSTS:
+        return False
     return session.scalar(select(func.count()).select_from(m.User)) == 0
 
 

@@ -169,6 +169,10 @@ def _from_database(session: Session, key: str) -> Principal | None:
     return Principal(name=row.name, kind=row.kind, scopes=scopes, packs=tuple(row.packs))
 
 
+def designated_admin_emails() -> set[str]:
+    return {e.strip().lower() for e in settings.admin_emails.split(",") if e.strip()}
+
+
 def _from_session(session: Session, token: str) -> Principal | None:
     if not token.startswith(SESSION_PREFIX):
         return None
@@ -180,7 +184,10 @@ def _from_session(session: Session, token: str) -> Principal | None:
     user = session.get(m.User, row.user_id)
     if user is None or user.disabled:
         return None
-    scopes = frozenset(user.scopes) | ({"admin"} if user.is_admin else frozenset())
+    # An email named in ADMIN_EMAILS is an administrator whenever the setting is present,
+    # whatever order things were set up in.
+    admin = user.is_admin or user.email in designated_admin_emails()
+    scopes = frozenset(user.scopes) | ({"admin"} if admin else frozenset())
     return Principal(
         name=user.name,
         kind="human",

@@ -15,7 +15,7 @@ from invoiceguard.db import models as m
 from invoiceguard.extraction.client import ExtractionResponse
 from invoiceguard.extraction.evidence import check_evidence, page_texts
 from invoiceguard.extraction.metrics import record_llm_call
-from invoiceguard.packs.registry import require_pack
+from invoiceguard.packs.registry import DEFAULT_PACK, require_pack
 from invoiceguard.workflow import audit
 from invoiceguard.workflow.service import (
     SYSTEM,
@@ -35,7 +35,7 @@ def register_upload(
     filename: str,
     actor: str,
     template_id: str | None = None,
-    pack_id: str = "invoices",
+    pack_id: str = DEFAULT_PACK,
 ) -> m.Case:
     require_pack(pack_id)
     if not pdf.startswith(b"%PDF"):

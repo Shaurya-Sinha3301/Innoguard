@@ -250,7 +250,7 @@ def test_packs_need_a_key(client):
 
 def test_packs_lists_the_installed_packs(client):
     body = client.get("/packs", headers=ASHA).json()
-    assert [p["id"] for p in body] == ["invoices"]
+    assert [p["id"] for p in body] == ["invoices", "expenses"]
 
 
 def test_pack_manifest_carries_reasons_thresholds_and_layout(client):

@@ -55,6 +55,8 @@ extend-immutable-calls = [
     "invoiceguard.domain.policy.PolicyConfig",
     "invoiceguard.domain.decision.Thresholds",
     "invoiceguard.api.auth.require_scope",
+    "invoiceguard.packs.expenses.models.ExpenseTolerances",
+    "invoiceguard.packs.expenses.models.ExpensePolicy",
     "fastapi.Depends",
     "fastapi.Query",
     "fastapi.Header",

@@ -1,7 +1,7 @@
 """SQLAlchemy models. Currency and invoice_type columns exist now so Release 2 extends them."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 import sqlalchemy as sa
@@ -340,3 +340,35 @@ class PostingGrant(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=_now()
     )
+
+
+class Employee(Base):
+    """Expenses pack reference data: who may claim, and which company card is theirs."""
+
+    __tablename__ = "employees"
+
+    employee_id: Mapped[str] = mapped_column(sa.Text, primary_key=True)
+    name: Mapped[str] = mapped_column(sa.Text)
+    card_last4: Mapped[str] = mapped_column(sa.String(4))
+
+
+class ExpenseCategory(Base):
+    __tablename__ = "expense_categories"
+
+    category: Mapped[str] = mapped_column(sa.Text, primary_key=True)
+    cap: Mapped[Decimal] = mapped_column(MONEY)
+    blocked: Mapped[bool] = mapped_column(server_default=sa.false())
+
+
+class CardTransaction(Base):
+    """A line on the company card statement."""
+
+    __tablename__ = "card_transactions"
+    __table_args__ = (sa.Index("ix_card_transactions_card", "card_last4"),)
+
+    txn_id: Mapped[str] = mapped_column(sa.Text, primary_key=True)
+    card_last4: Mapped[str] = mapped_column(sa.String(4))
+    merchant: Mapped[str] = mapped_column(sa.Text)
+    txn_date: Mapped[date] = mapped_column(sa.Date)
+    amount: Mapped[Decimal] = mapped_column(MONEY)
+    currency: Mapped[str] = mapped_column(sa.String(3))

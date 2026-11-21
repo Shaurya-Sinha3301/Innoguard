@@ -1,0 +1,56 @@
+id: expenses
+name: Expense claims
+version: 1
+description: Reads an employee's expense claim and receipt, checks it against the company card statement and spending policy, and sends anything doubtful to a person. The rules are assumptions for a synthetic company, to be confirmed with the people who run the policy.
+document: Expense claim with receipt (PDF)
+
+fields:
+  - { name: employee_id, label: Employee }
+  - { name: merchant, label: Merchant }
+  - { name: expense_date, label: Date, type: date }
+  - { name: currency, label: Currency, type: currency }
+  - { name: total, label: Total, type: money }
+  - { name: tax, label: Tax, type: money, required: false }
+  - { name: card_last4, label: Card (last four digits) }
+  - { name: category, label: Category }
+
+reasons:
+  - { code: UNKNOWN_EMPLOYEE, label: "Unknown employee", explain: "The employee id on the claim is not in the employee list." }
+  - { code: WRONG_CARD, label: "Not their card", explain: "The card on the receipt is not the company card issued to this employee." }
+  - { code: UNKNOWN_CATEGORY, label: "Unknown category", explain: "The claimed category is not one the expense policy defines." }
+  - { code: CATEGORY_BLOCKED, label: "Not reimbursable", explain: "This category is never reimbursed (for example gifts or alcohol)." }
+  - { code: OVER_CATEGORY_CAP, label: "Over the category cap", explain: "The amount is above the most one claim in this category may be." }
+  - { code: DATE_IN_FUTURE, label: "Dated in the future", explain: "The expense date is after the day the claim was submitted." }
+  - { code: CLAIM_TOO_OLD, label: "Claim too old", explain: "The expense is older than the 60 days a claim may be submitted within." }
+  - { code: NO_CARD_TRANSACTION, label: "Not on the card statement", explain: "No card statement line matches this merchant, card and date (within 3 days)." }
+  - { code: AMOUNT_MISMATCH, label: "Differs from the statement", explain: "The card statement charged a different amount than the receipt shows." }
+  - { code: CURRENCY_MISMATCH, label: "Currency mismatch", explain: "The receipt currency differs from the card statement currency." }
+  - { code: DUPLICATE_CLAIM, label: "Possible duplicate", explain: "This employee already claimed the same amount at this merchant on the same day." }
+  - { code: DUPLICATE_EXACT, label: "Exact duplicate", explain: "The same file has been submitted before." }
+  - { code: HIGH_VALUE, label: "High value", explain: "Above the auto-approval limit, so policy always asks a human." }
+  - { code: LOW_EXTRACTION_CONFIDENCE, label: "Low read confidence", explain: "At least one field was read with low confidence or without matching evidence.", severity: soft }
+  - { code: LOW_MATCH_QUALITY, label: "No clean card match", explain: "The receipt could not be matched cleanly to a card statement line.", severity: soft }
+  - { code: EXTRACTION_INCOMPLETE, label: "Incomplete read", explain: "Required fields could not be read, so the claim was not checked." }
+  - { code: EXTRACTION_FAILED, label: "Read failed", explain: "The document could not be read." }
+
+reason_prefixes:
+  - { code: MISSING_FIELD, label: "Missing field", explain: "A required field was not found on the document" }
+  - { code: UNPARSEABLE, label: "Unreadable value", explain: "A value could not be read as a number, date or card" }
+  - { code: EVIDENCE_NOT_FOUND, label: "Unverified value", explain: "The text quoted for this value is not in the PDF" }
+
+implied_reason: LOW_MATCH_QUALITY
+
+thresholds:
+  min_extraction_confidence: "0.90"
+  min_match_quality: "1"
+  max_auto_amount: "5000"
+
+tolerances:
+  amount_abs: "0.01"
+  date_window_days: 3
+  max_claim_age_days: 60
+
+queue_columns: [ref, merchant, category, reasons, amount, age]
+detail_sections: [reasons, expense_check, decision, evidence, document, audit, approvals, model_calls]
+
+synthetic_data_notice: "Synthetic demo data. The policy rules are assumptions, not a real company's."

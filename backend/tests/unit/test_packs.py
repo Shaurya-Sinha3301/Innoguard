@@ -52,7 +52,7 @@ def test_soft_reasons_are_exactly_the_two_signals_that_are_not_policy_violations
 
 
 def test_registry_lists_the_invoice_pack():
-    assert [p.id for p in list_packs()] == ["invoices"]
+    assert [p.id for p in list_packs()] == ["invoices", "expenses"]
     assert get_pack("nope") is None
 
 

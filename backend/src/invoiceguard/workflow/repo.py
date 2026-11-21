@@ -51,6 +51,7 @@ def load_existing(
     rows = session.execute(
         select(m.Case.id, m.Case.file_hash, m.Case.vendor_id, m.Case.number_norm).where(
             m.Case.id != exclude_id,
+            m.Case.pack_id == "invoices",
             or_(
                 m.Case.file_hash == file_hash,
                 (m.Case.vendor_id == vendor_id) & (m.Case.number_norm == number_norm),
@@ -73,6 +74,7 @@ def previously_invoiced(
         .join(m.Case, m.Case.id == m.CaseLine.case_id)
         .where(
             m.Case.po_number == po_number,
+            m.Case.pack_id == "invoices",
             m.Case.id != exclude_id,
             m.Case.status.in_(_BILLED_STATES),
         )

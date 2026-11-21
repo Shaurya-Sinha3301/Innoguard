@@ -1,9 +1,10 @@
 """All installed packs, validated when the process starts."""
 
 from invoiceguard.packs.base import Pack
+from invoiceguard.packs.expenses import PACK as EXPENSES
 from invoiceguard.packs.invoices import PACK as INVOICES
 
-_PACKS: dict[str, Pack] = {INVOICES.id: INVOICES}
+_PACKS: dict[str, Pack] = {INVOICES.id: INVOICES, EXPENSES.id: EXPENSES}
 
 
 def list_packs() -> list[Pack]:

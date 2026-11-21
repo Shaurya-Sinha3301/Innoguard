@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from invoiceguard.db import models as m
 from invoiceguard.extraction.service import register_upload
 from invoiceguard.jobs.outbox import TOPIC_EXTRACT, enqueue
+from invoiceguard.packs.registry import DEFAULT_PACK
 from invoiceguard.workflow import audit
 from invoiceguard.workflow.errors import IllegalTransition
 from invoiceguard.workflow.service import lock_invoice, transition
@@ -21,7 +22,7 @@ def submit_document(
     filename: str,
     actor: str,
     template_id: str | None = None,
-    pack_id: str = "invoices",
+    pack_id: str = DEFAULT_PACK,
 ) -> m.Case:
     row = register_upload(
         session, pdf, filename=filename, actor=actor, template_id=template_id, pack_id=pack_id

@@ -52,11 +52,12 @@ def run_extraction_job(
             transition(session, row, S.EXTRACTING, actor=SYSTEM)
         # EXTRACTING means a retry, or a redelivery after a worker crash.
         pdf = document_bytes(session, case_id)
+        pack_id = row.pack_id
         session.commit()
 
     # The model call runs outside any database transaction.
     try:
-        response = extractor.extract(pdf)
+        response = extractor.extract(pdf, pack_id)
     except ExtractionError as exc:
         return _fail(session_factory, case_id, str(exc), attempt)
     except (TransientExtractionError, OSError, TimeoutError) as exc:

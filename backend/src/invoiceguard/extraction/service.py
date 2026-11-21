@@ -12,11 +12,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from invoiceguard.db import models as m
-from invoiceguard.domain.duplicates import normalize_invoice_number
 from invoiceguard.extraction.client import ExtractionResponse
 from invoiceguard.extraction.evidence import check_evidence, page_texts
 from invoiceguard.extraction.metrics import record_llm_call
-from invoiceguard.extraction.normalizer import normalize
+from invoiceguard.packs.registry import require_pack
 from invoiceguard.workflow import audit
 from invoiceguard.workflow.service import (
     SYSTEM,
@@ -36,13 +35,16 @@ def register_upload(
     filename: str,
     actor: str,
     template_id: str | None = None,
+    pack_id: str = "invoices",
 ) -> m.Case:
+    require_pack(pack_id)
     if not pdf.startswith(b"%PDF"):
         raise ValueError("only PDF files are accepted")
     if len(pdf) > MAX_UPLOAD_BYTES:
         raise ValueError("file is larger than the 5 MB limit")
 
     row = m.Case(
+        pack_id=pack_id,
         file_hash=hashlib.sha256(pdf).hexdigest(),
         status=S.RECEIVED.value,
         version=1,
@@ -95,7 +97,8 @@ def complete_extraction(
     record_llm_call(
         session, case_id=row.id, step="extract", usage=response.usage, trace_id=row.trace_id
     )
-    normalized = normalize(response.invoice, row.file_hash)
+    pack = require_pack(row.pack_id)
+    normalized = pack.normalize(response.extracted, row.file_hash)
     fields, evidence_issues = check_evidence(normalized.fields, page_texts(pdf))
     issues = normalized.issues + evidence_issues
     confidence = min((f.confidence for f in fields if f.value), default=normalized.confidence)
@@ -120,7 +123,7 @@ def complete_extraction(
         payload={"confidence": confidence, "issues": issues, "model": response.usage.model},
     )
 
-    if normalized.invoice is None:
+    if normalized.value is None:
         transition(
             session,
             row,
@@ -130,19 +133,7 @@ def complete_extraction(
         )
         return row
 
-    invoice = normalized.invoice
-    row.invoice_number = invoice.invoice_number
-    row.number_norm = normalize_invoice_number(invoice.invoice_number)
-    row.vendor_id = invoice.vendor_id
-    row.po_number = invoice.po_number
-    row.currency = invoice.currency
-    row.subtotal = invoice.subtotal
-    row.tax = invoice.tax
-    row.total = invoice.total
-    row.lines = [
-        m.CaseLine(line_no=i, sku=line.sku, qty=line.qty, unit_price=line.unit_price)
-        for i, line in enumerate(invoice.lines, start=1)
-    ]
+    pack.apply_extracted(row, normalized.value)
     session.flush()
 
     apply_reconciliation(session, row, actor=actor, extraction_confidence=confidence)

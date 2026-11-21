@@ -190,9 +190,9 @@ def test_two_workers_on_the_same_job_complete_it_once(session_factory):
     outcomes: list[JobOutcome] = []
 
     class SlowFake(FakeExtractor):
-        def extract(self, pdf):
+        def extract(self, pdf, pack=None):
             time.sleep(0.05)
-            return super().extract(pdf)
+            return super().extract(pdf, pack)
 
     def work():
         barrier.wait()

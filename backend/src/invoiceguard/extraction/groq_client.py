@@ -11,10 +11,9 @@ import time
 from typing import Any
 
 import groq
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from invoiceguard.extraction.client import (
-    SYSTEM_PROMPT,
     ExtractionError,
     ExtractionResponse,
     LlmUsage,
@@ -23,13 +22,8 @@ from invoiceguard.extraction.client import (
 from invoiceguard.extraction.evidence import page_texts
 from invoiceguard.extraction.schema import ExtractedInvoice
 
-USER_PROMPT = (
-    "Extract the invoice header fields and every line item from the document below. "
-    "Use the page markers for the page numbers. Return only the JSON object."
-)
 
-
-def strict_schema(model: type[ExtractedInvoice] = ExtractedInvoice) -> dict[str, Any]:
+def strict_schema(model: type[BaseModel] = ExtractedInvoice) -> dict[str, Any]:
     """The Pydantic schema rewritten for strict mode: references inlined, every object
     closed with additionalProperties false, every property required."""
     schema = model.model_json_schema()
@@ -65,24 +59,29 @@ class GroqExtractor:
         self.model = model
         # The key comes from the GROQ_API_KEY environment variable.
         self.client = client or groq.Groq(max_retries=0)
-        self._schema = strict_schema()
+        self._schemas: dict[str, dict[str, Any]] = {}
 
-    def extract(self, pdf: bytes) -> ExtractionResponse:
+    def extract(self, pdf: bytes, pack: str | None = None) -> ExtractionResponse:
+        from invoiceguard.packs.registry import require_pack
+
+        spec = require_pack(pack)
+        if spec.id not in self._schemas:
+            self._schemas[spec.id] = strict_schema(spec.extraction_model)
         text = document_text(pdf)
         started = time.perf_counter()
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": f"{USER_PROMPT}\n\n{text}"},
+                    {"role": "system", "content": spec.system_prompt},
+                    {"role": "user", "content": f"{spec.user_prompt}\n\n{text}"},
                 ],
                 response_format={
                     "type": "json_schema",
                     "json_schema": {
-                        "name": "extracted_invoice",
+                        "name": f"extracted_{spec.id}",
                         "strict": True,
-                        "schema": self._schema,
+                        "schema": self._schemas[spec.id],
                     },
                 },
             )
@@ -98,13 +97,13 @@ class GroqExtractor:
         if choice.finish_reason == "length":
             raise ExtractionError("the model ran out of output tokens")
         try:
-            invoice = ExtractedInvoice.model_validate_json(choice.message.content or "")
+            extracted = spec.extraction_model.model_validate_json(choice.message.content or "")
         except ValidationError as exc:
             raise ExtractionError("the model's output did not match the schema") from exc
 
         usage = response.usage
         return ExtractionResponse(
-            invoice=invoice,
+            extracted=extracted,
             usage=LlmUsage(
                 provider=self.provider,
                 model=self.model,

@@ -65,7 +65,7 @@ class NoisyExtractor:
         self.seed = seed
         self.applied: dict[str, str | None] = {}
 
-    def extract(self, pdf: bytes) -> ExtractionResponse:
+    def extract(self, pdf: bytes, pack: str | None = None) -> ExtractionResponse:
         key = hashlib.sha256(pdf).hexdigest()
         invoice, template = self.truth[key]
         rng = random.Random(f"{self.seed}:{key}")
@@ -75,6 +75,6 @@ class NoisyExtractor:
             extracted = corrupt(extracted, kind, rng)
         self.applied[key] = kind
         return ExtractionResponse(
-            invoice=extracted,
+            extracted=extracted,
             usage=LlmUsage(self.provider, self.model, 0, 0, 0),
         )

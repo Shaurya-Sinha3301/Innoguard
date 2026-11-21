@@ -21,8 +21,11 @@ def submit_document(
     filename: str,
     actor: str,
     template_id: str | None = None,
+    pack_id: str = "invoices",
 ) -> m.Case:
-    row = register_upload(session, pdf, filename=filename, actor=actor, template_id=template_id)
+    row = register_upload(
+        session, pdf, filename=filename, actor=actor, template_id=template_id, pack_id=pack_id
+    )
     enqueue(session, TOPIC_EXTRACT, {"case_id": str(row.id)})
     return row
 

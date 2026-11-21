@@ -2,6 +2,8 @@
 
 from collections.abc import Mapping
 
+from pydantic import BaseModel
+
 from invoiceguard.domain.models import Invoice
 from invoiceguard.extraction.client import (
     ExtractionError,
@@ -64,7 +66,7 @@ class FakeExtractor:
 
     def __init__(
         self,
-        result: ExtractedInvoice | None = None,
+        result: BaseModel | None = None,
         *,
         transient_failures: int = 0,
         permanent_error: str | None = None,
@@ -74,14 +76,14 @@ class FakeExtractor:
         self.permanent_error = permanent_error
         self.calls = 0
 
-    def extract(self, pdf: bytes) -> ExtractionResponse:
+    def extract(self, pdf: bytes, pack: str | None = None) -> ExtractionResponse:
         self.calls += 1
         if self.calls <= self.transient_failures:
             raise TransientExtractionError("simulated rate limit")
         if self.permanent_error or self.result is None:
             raise ExtractionError(self.permanent_error or "no result configured")
         return ExtractionResponse(
-            invoice=self.result,
+            extracted=self.result,
             usage=LlmUsage(
                 provider=self.provider,
                 model=self.model,

@@ -12,3 +12,14 @@ def list_packs() -> list[Pack]:
 
 def get_pack(pack_id: str) -> Pack | None:
     return _PACKS.get(pack_id)
+
+
+DEFAULT_PACK = "invoices"
+
+
+def require_pack(pack_id: str | None) -> Pack:
+    """The pack by id, defaulting to invoices for callers written before there were two."""
+    found = _PACKS.get(pack_id or DEFAULT_PACK)
+    if found is None:
+        raise KeyError(f"unknown pack {pack_id!r}")
+    return found

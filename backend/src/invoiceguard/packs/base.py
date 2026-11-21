@@ -5,12 +5,17 @@ contains logic. Rules stay as ordinary, tested Python so a change to them is rev
 like any other code change.
 """
 
+from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 import yaml
 from pydantic import BaseModel, ConfigDict, model_validator
+from sqlalchemy.orm import Session
+
+from invoiceguard.domain.decision import Decision
+from invoiceguard.extraction.records import NormalizedCase
 
 
 class _Spec(BaseModel):
@@ -43,6 +48,10 @@ class Tolerances(_Spec):
     price_pct: Decimal = Decimal("0")
     qty_pct: Decimal = Decimal("0")
     amount_abs: Decimal = Decimal("0")
+    # Expenses: how far apart (in days) a receipt and its card transaction may be, and how
+    # old a claim may be when it is submitted.
+    date_window_days: int = 0
+    max_claim_age_days: int = 0
 
 
 class Manifest(_Spec):
@@ -84,8 +93,48 @@ def load_manifest(path: Path) -> Manifest:
         return Manifest.model_validate(yaml.safe_load(handle))
 
 
+@dataclass(frozen=True)
+class PackReconciliation:
+    """What a pack's rules concluded for one case."""
+
+    decision: Decision
+    # Extra facts recorded on the audit event when the case reaches its outcome state.
+    matched_payload: dict[str, Any]
+
+
 class Pack(Protocol):
-    """A registered workflow. Release 2 grows this protocol as the core becomes pack-driven."""
+    """A registered workflow.
+
+    The core (workflow, extraction, jobs, API) only talks to this interface, so it never
+    names a pack. A pack supplies what is read from a document, how the read values are
+    typed, how they are checked, and which reference data an agent may look up.
+    """
 
     id: str
     manifest: Manifest
+    # What the model must return, and how it is told to do it.
+    extraction_model: type[BaseModel]
+    system_prompt: str
+    user_prompt: str
+    # Names accepted by `lookup`, for agents.
+    lookup_names: tuple[str, ...]
+
+    def normalize(self, extracted: Any, file_hash: str) -> NormalizedCase:
+        """Type the strings the model returned. Refuse what is ambiguous."""
+        ...
+
+    def apply_extracted(self, row: Any, value: Any) -> None:
+        """Write the typed value onto the case row."""
+        ...
+
+    def reconcile(self, session: Session, row: Any, confidence: Decimal) -> PackReconciliation:
+        """Check the case against reference data and decide."""
+        ...
+
+    def context(self, session: Session, row: Any) -> dict[str, Any]:
+        """Pack-specific facts for the case page (what the case was checked against)."""
+        ...
+
+    def lookup(self, session: Session, name: str, key: str) -> Any:
+        """Read-only reference data for agents."""
+        ...

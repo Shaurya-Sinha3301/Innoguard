@@ -18,16 +18,20 @@ from sqlalchemy.orm import sessionmaker
 
 from invoiceguard.db.models import ExtractionRecording
 from invoiceguard.extraction.client import ExtractionError, ExtractionResponse, Extractor, LlmUsage
-from invoiceguard.extraction.schema import ExtractedInvoice
 
 
 def _encode(response: ExtractionResponse) -> dict[str, Any]:
-    return {"invoice": response.invoice.model_dump(), "usage": asdict(response.usage)}
+    return {"extracted": response.extracted.model_dump(), "usage": asdict(response.usage)}
 
 
-def _decode(data: dict[str, Any]) -> ExtractionResponse:
+def _decode(data: dict[str, Any], pack: str | None) -> ExtractionResponse:
+    from invoiceguard.packs.registry import require_pack
+
+    model = require_pack(pack).extraction_model
+    # Recordings made before packs existed stored the invoice under "invoice".
+    payload = data["extracted"] if "extracted" in data else data["invoice"]
     return ExtractionResponse(
-        invoice=ExtractedInvoice.model_validate(data["invoice"]),
+        extracted=model.model_validate(payload),
         usage=LlmUsage(**data["usage"]),
     )
 
@@ -46,13 +50,13 @@ class CachedExtractor:
     def _path(self, pdf: bytes) -> Path:
         return self.cache_dir / f"{file_hash(pdf)}.json"
 
-    def extract(self, pdf: bytes) -> ExtractionResponse:
+    def extract(self, pdf: bytes, pack: str | None = None) -> ExtractionResponse:
         path = self._path(pdf)
         if path.exists():
-            return _decode(json.loads(path.read_text(encoding="utf-8")))
+            return _decode(json.loads(path.read_text(encoding="utf-8")), pack)
         if self.inner is None:
             raise ExtractionError(f"no recorded extraction for {path.name}")
-        response = self.inner.extract(pdf)
+        response = self.inner.extract(pdf, pack)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(_encode(response), indent=2, sort_keys=True), encoding="utf-8")
         return response
@@ -65,15 +69,15 @@ class DbCachedExtractor:
         self.session_factory = session_factory
         self.inner = inner
 
-    def extract(self, pdf: bytes) -> ExtractionResponse:
+    def extract(self, pdf: bytes, pack: str | None = None) -> ExtractionResponse:
         key = file_hash(pdf)
         with self.session_factory() as session:
             row = session.get(ExtractionRecording, key)
             if row is not None:
-                return _decode(row.payload)
+                return _decode(row.payload, pack)
         if self.inner is None:
             raise ExtractionError(f"no recorded extraction for {key}")
-        response = self.inner.extract(pdf)
+        response = self.inner.extract(pdf, pack)
         record(self.session_factory, pdf, response, simulated=False)
         return response
 

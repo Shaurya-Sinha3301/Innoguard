@@ -17,6 +17,8 @@ from invoiceguard.domain import models as d
 from invoiceguard.domain.decision import Outcome
 from invoiceguard.domain.duplicates import normalize_invoice_number
 from invoiceguard.domain.pipeline import Reconciliation, reconcile
+from invoiceguard.packs.base import PackReconciliation
+from invoiceguard.packs.registry import require_pack
 from invoiceguard.workflow import audit, repo
 from invoiceguard.workflow.errors import IllegalTransition, InvoiceNotFound, StaleVersion
 from invoiceguard.workflow.state_machine import InvoiceState as S
@@ -91,10 +93,10 @@ def apply_reconciliation(
     *,
     actor: str = SYSTEM,
     extraction_confidence: Decimal = Decimal(1),
-) -> Reconciliation:
+) -> PackReconciliation:
     """Run the deterministic pipeline and move the invoice to its outcome state."""
     started = time.perf_counter()
-    result = reconcile_row(session, row, extraction_confidence)
+    result = require_pack(row.pack_id).reconcile(session, row, extraction_confidence)
     elapsed_ms = int((time.perf_counter() - started) * 1000)
 
     transition(session, row, S.VALIDATED, actor=actor)
@@ -103,11 +105,7 @@ def apply_reconciliation(
         row,
         S.MATCHED,
         actor=actor,
-        payload={
-            "match_quality": result.match.match_quality,
-            "discrepancies": [d_.code.value for d_ in result.match.discrepancies],
-            "duration_ms": elapsed_ms,
-        },
+        payload={**result.matched_payload, "duration_ms": elapsed_ms},
     )
 
     decision = result.decision
@@ -317,7 +315,7 @@ def edit_invoice(
 
     session.flush()
     session.refresh(row)
-    result = reconcile_row(session, row)
+    result = require_pack(row.pack_id).reconcile(session, row, Decimal(1))
     audit.record(
         session,
         event_type="invoice.reconciled_after_edit",

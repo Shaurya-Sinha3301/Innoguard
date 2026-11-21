@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 
 from invoiceguard.domain.models import Invoice, InvoiceLine
+from invoiceguard.extraction.records import FieldRecord
 from invoiceguard.extraction.schema import ExtractedInvoice, ExtractedValue
 
 _CURRENCY_TOKENS = re.compile(r"(?i)\b(?:INR|USD|EUR|RS)\b\.?|[₹$€]")
@@ -57,15 +58,6 @@ def normalize_currency(raw: str) -> str:
     if re.fullmatch(r"[A-Z]{3}", key):
         return key
     raise NormalizationError(f"unknown currency: {raw!r}")
-
-
-@dataclass(frozen=True)
-class FieldRecord:
-    field: str
-    value: str | None
-    confidence: Decimal
-    page: int | None
-    snippet: str | None
 
 
 @dataclass

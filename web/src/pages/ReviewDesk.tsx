@@ -178,7 +178,7 @@ export default function ReviewDesk() {
           </div>
         </div>
 
-        <div className="border-t border-line pt-5">
+        <div className="hidden border-t border-line pt-5 lg:block">
           <div className="mb-2 flex items-center justify-between">
             <p className="label-mono">Why invoices are waiting</p>
             {reason !== "all" && (
@@ -214,7 +214,7 @@ export default function ReviewDesk() {
           )}
         </div>
 
-        <dl className="grid grid-cols-2 gap-3 border-t border-line pt-5 text-sm">
+        <dl className="hidden grid-cols-2 gap-3 border-t border-line pt-5 text-sm lg:grid">
           <div>
             <dt className="label-mono">Failed jobs</dt>
             <dd className={cx("mt-1 font-mono text-md", metrics.data?.operations.open_failed_jobs ? "text-red" : "")}>

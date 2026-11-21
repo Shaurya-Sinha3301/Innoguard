@@ -44,7 +44,7 @@ export default function Upload() {
             choose(e.dataTransfer.files[0]);
           }}
           className={cx(
-            "flex flex-col items-center gap-2 border border-dashed px-4 py-8 text-center",
+            "flex flex-col items-center gap-2 rounded-xl border border-dashed px-4 py-12 text-center",
             dragging ? "border-accent bg-fill" : "border-line",
           )}
         >

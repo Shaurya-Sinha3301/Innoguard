@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowLeft,
+  Bot,
   ArrowRight,
   Boxes,
   Cpu,
@@ -358,6 +359,135 @@ function AuditTrail({ inv }: { inv: InvoiceDetail }) {
   );
 }
 
+/* ---------- Agents: what they suggested, and releasing a case for one to post ---------- */
+
+function useNow(intervalMs: number) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(timer);
+  }, [intervalMs]);
+  return now;
+}
+
+function remaining(expiresAt: string, now: number): string {
+  const seconds = Math.max(0, Math.floor((new Date(expiresAt).getTime() - now) / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function AgentActivity({ inv }: { inv: InvoiceDetail }) {
+  const queryClient = useQueryClient();
+  const now = useNow(1000);
+  const [ttl, setTtl] = useState(15);
+  const suggestions = useQuery({ queryKey: ["suggestions", inv.id], queryFn: () => api.suggestions(inv.id), refetchInterval: 5000 });
+  const grants = useQuery({ queryKey: ["grants", inv.id], queryFn: () => api.grants(inv.id), refetchInterval: 5000 });
+  const dismiss = useMutation({
+    mutationFn: (suggestionId: number) => api.dismissSuggestion(inv.id, suggestionId),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["suggestions", inv.id] }),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "That did not work"),
+  });
+  const release = useMutation({
+    mutationFn: () => api.issueGrant(inv.id, ttl),
+    onSuccess: () => {
+      toast.success("Released. The agent can post this case once, until the grant expires.");
+      void queryClient.invalidateQueries({ queryKey: ["grants", inv.id] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "That did not work"),
+  });
+  const postable = inv.status === "APPROVED" || inv.status === "AUTO_APPROVED";
+  const open = (suggestions.data ?? []).filter((s) => s.status === "OPEN");
+
+  return (
+    <div className="divide-y divide-line">
+      <div className="space-y-2 p-4">
+        <p className="label-mono">Suggestions</p>
+        {open.length === 0 ? (
+          <p className="text-sm text-ink-2">No agent has suggested anything for this case.</p>
+        ) : (
+          <ul className="space-y-2">
+            {open.map((s) => (
+              <li key={s.id} className="rounded-lg border border-line bg-fill-2 p-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-fill px-2 py-0.5 font-mono text-xs">agent: {s.proposed_by.replace(/^mcp:/, "")}</span>
+                  <b className="font-semibold">suggests {s.decision}</b>
+                  {s.case_version !== inv.version && <span className="text-xs font-semibold text-red">for an older version</span>}
+                </div>
+                <p className="mt-1.5 text-ink-2">{s.rationale}</p>
+                <div className="mt-2 flex items-center gap-3">
+                  <Button variant="ghost" disabled={dismiss.isPending} onClick={() => dismiss.mutate(s.id)}>
+                    Dismiss
+                  </Button>
+                  <span className="text-xs text-ink-3">A suggestion changes nothing. You decide above.</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="space-y-3 p-4">
+        <p className="label-mono">Let an agent post</p>
+        {postable ? (
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-sm" htmlFor="grant-ttl">
+              Valid for
+              <select
+                id="grant-ttl"
+                value={ttl}
+                onChange={(e) => setTtl(Number(e.target.value))}
+                className="mt-1 block h-9 rounded-lg border border-line px-2 text-sm"
+              >
+                {[5, 15, 30, 60].map((m) => (
+                  <option key={m} value={m}>
+                    {m} minutes
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button variant="secondary" disabled={release.isPending} onClick={() => release.mutate()}>
+              Release for posting
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-ink-2">Only an approved case can be released. Approve it first.</p>
+        )}
+        {(grants.data ?? []).length > 0 && (
+          <ul className="space-y-1.5">
+            {(grants.data ?? []).slice(0, 4).map((g) => {
+              const expired = new Date(g.expires_at).getTime() <= now;
+              const stale = g.case_version !== inv.version;
+              const state = g.used_at ? `used by ${g.used_by?.replace(/^mcp:/, "")}` : stale ? "void, the case changed" : expired ? "expired" : `expires in ${remaining(g.expires_at, now)}`;
+              return (
+                <li key={g.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line px-3 py-2 text-sm">
+                  <span className="font-mono text-[13px]">
+                    grant {g.id.slice(0, 8)} · v{g.case_version}
+                  </span>
+                  {!g.used_at && !stale && !expired && (
+                    <button
+                      type="button"
+                      className="text-xs text-accent hover:underline"
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(g.id);
+                        toast.success("Grant id copied. Give it to the agent.");
+                      }}
+                    >
+                      Copy grant id
+                    </button>
+                  )}
+                  <span className={g.used_at || stale || expired ? "text-ink-2" : "font-semibold text-accent"}>{state}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="text-xs text-ink-2">
+          A grant lets one agent post this approved case, once. It stops working if the case changes or time runs out.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function InvoiceDetailPage() {
   const { id = "" } = useParams();
   const invoice = useQuery({ queryKey: ["invoice", id], queryFn: () => api.invoice(id), refetchInterval: 4000 });
@@ -434,9 +564,14 @@ export default function InvoiceDetailPage() {
         <Module icon={Boxes} title="Three-way match" className="lg:col-span-8" extra={<span className="font-mono text-xs text-ink-2">{inv.purchase_order?.po_number ?? ""}</span>}>
           <ThreeWayMatch inv={inv} />
         </Module>
-        <Module icon={Gavel} title="Decision" className="lg:col-span-4">
-          <Decision inv={inv} />
-        </Module>
+        <div className="space-y-4 lg:col-span-4">
+          <Module icon={Gavel} title="Decision">
+            <Decision inv={inv} />
+          </Module>
+          <Module icon={Bot} title="Agent activity">
+            <AgentActivity inv={inv} />
+          </Module>
+        </div>
 
         <Module icon={ScanText} title="Read from the document" className="lg:col-span-7">
           <Evidence id={id} />

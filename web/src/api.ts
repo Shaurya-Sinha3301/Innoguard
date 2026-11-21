@@ -76,6 +76,27 @@ export type PrincipalRow = {
   last_used_at: string | null;
 };
 
+export type Suggestion = {
+  id: number;
+  case_version: number;
+  decision: string;
+  rationale: string;
+  proposed_by: string;
+  status: string;
+  resolved_by: string | null;
+  created_at: string;
+};
+
+export type Grant = {
+  id: string;
+  case_version: number;
+  amount: string;
+  issued_by: string;
+  expires_at: string;
+  used_at: string | null;
+  used_by: string | null;
+};
+
 export type Invoice = {
   id: string;
   invoice_number: string | null;
@@ -181,6 +202,12 @@ import type { Manifest } from "./pack";
 export const api = {
   pack: (id: string) => request<Manifest>(`/packs/${id}`),
   me: () => request<Me>("/me"),
+  suggestions: (id: string) => request<Suggestion[]>(`/invoices/${id}/suggestions`),
+  dismissSuggestion: (id: string, suggestionId: number) =>
+    request<Suggestion>(`/invoices/${id}/suggestions/${suggestionId}/dismiss`, { method: "POST" }),
+  grants: (id: string) => request<Grant[]>(`/invoices/${id}/grants`),
+  issueGrant: (id: string, ttlMinutes: number) =>
+    request<Grant>(`/invoices/${id}/grants`, json({ ttl_minutes: ttlMinutes })),
   principals: () => request<PrincipalRow[]>("/principals"),
   createPrincipal: (body: { name: string; kind: "agent" | "human"; scopes: string[] }) =>
     request<PrincipalRow & { key: string }>("/principals", json(body)),

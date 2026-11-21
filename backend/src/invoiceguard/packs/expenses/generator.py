@@ -120,7 +120,7 @@ def _money(rng: random.Random, low: int, high: int) -> Decimal:
 
 
 def generate_expense_scenario(
-    rng: random.Random, index: int, label: ExpenseLabel
+    rng: random.Random, index: int, label: ExpenseLabel, today: date = TODAY
 ) -> ExpenseScenario:
     merchant = rng.choice(_MERCHANTS)
     card = f"{rng.randint(1000, 9999)}"
@@ -128,7 +128,7 @@ def generate_expense_scenario(
     employee: Employee | None = Employee(employee_id, f"Employee {index}", card)
     category = rng.choice(("meals", "fuel"))
     total = _money(rng, 150, 2800)
-    expense_date = TODAY - timedelta(days=rng.randint(1, 30))
+    expense_date = today - timedelta(days=rng.randint(1, 30))
     txn_amount_delta = Decimal(0)
     txn_card = card
     has_txn = True
@@ -150,9 +150,9 @@ def generate_expense_scenario(
     elif label is ExpenseLabel.UNKNOWN_EMPLOYEE:
         employee = None
     elif label is ExpenseLabel.DATE_IN_FUTURE:
-        expense_date = TODAY + timedelta(days=rng.randint(2, 20))
+        expense_date = today + timedelta(days=rng.randint(2, 20))
     elif label is ExpenseLabel.CLAIM_TOO_OLD:
-        expense_date = TODAY - timedelta(days=rng.randint(90, 200))
+        expense_date = today - timedelta(days=rng.randint(90, 200))
     elif label is ExpenseLabel.HIGH_VALUE:
         category, total = "travel", _money(rng, 6000, 14000)
     elif label is ExpenseLabel.DUPLICATE_CLAIM:
@@ -186,7 +186,7 @@ def generate_expense_scenario(
                 _digest("unrelated", index, k),
                 f"E-x{rng.randint(10, 99)}",
                 normalize_merchant(rng.choice(_MERCHANTS)),
-                TODAY - timedelta(days=rng.randint(1, 40)),
+                today - timedelta(days=rng.randint(1, 40)),
                 _money(rng, 100, 900),
             )
         )
@@ -210,7 +210,7 @@ def generate_expense_scenario(
                 f"noise-{index}-{k}",
                 f"{rng.randint(1000, 9999)}",
                 rng.choice(_MERCHANTS).upper(),
-                TODAY - timedelta(days=rng.randint(1, 40)),
+                today - timedelta(days=rng.randint(1, 40)),
                 _money(rng, 100, 900),
                 "INR",
             )

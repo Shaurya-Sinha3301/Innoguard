@@ -1,16 +1,17 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from invoiceguard.api import schemas
-from invoiceguard.api.auth import current_user, require_scope
+from invoiceguard.api.auth import Principal, current_user, require_scope
 from invoiceguard.api.deps import get_session
 from invoiceguard.api.ratelimit import UPLOAD_GUARDS, WRITE_GUARDS
 from invoiceguard.db import models as m
 from invoiceguard.extraction.service import MAX_UPLOAD_BYTES
 from invoiceguard.jobs.documents import replay_failed, submit_document
+from invoiceguard.packs.registry import DEFAULT_PACK, get_pack
 from invoiceguard.workflow.errors import IllegalTransition, InvoiceNotFound
 
 router = APIRouter(tags=["documents"], dependencies=[Depends(require_scope("read"))])
@@ -22,12 +23,17 @@ router = APIRouter(tags=["documents"], dependencies=[Depends(require_scope("read
 )
 async def upload_document(
     file: UploadFile = File(...),
+    pack: str = Query(default=DEFAULT_PACK),
     session: Session = Depends(get_session),
-    user: str = Depends(current_user),
+    who: Principal = Depends(require_scope("submit")),
 ) -> m.Case:
+    if get_pack(pack) is None or pack not in who.packs:
+        raise HTTPException(404, "unknown pack, or this key cannot use it")
     data = await file.read(MAX_UPLOAD_BYTES + 1)
     try:
-        return submit_document(session, data, filename=file.filename or "upload.pdf", actor=user)
+        return submit_document(
+            session, data, filename=file.filename or "upload.pdf", actor=who.name, pack_id=pack
+        )
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 

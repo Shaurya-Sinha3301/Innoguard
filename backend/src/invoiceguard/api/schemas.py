@@ -46,6 +46,7 @@ class InvoiceOut(BaseModel):
     status: str
     version: int
     created_at: datetime
+    pack_id: str = "invoices"
 
 
 class InvoiceRow(InvoiceOut):
@@ -121,6 +122,9 @@ class InvoiceDetail(InvoiceOut):
     approvals: list[ApprovalOut]
     timeline: list[AuditOut]
     llm_calls: list[LlmCallOut]
+    # What the case's pack checked it against (an expense: employee, policy, card line).
+    data: dict = {}
+    context: dict = {}
 
 
 class ExtractionFieldOut(BaseModel):

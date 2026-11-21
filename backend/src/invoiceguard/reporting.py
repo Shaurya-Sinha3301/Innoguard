@@ -17,9 +17,17 @@ def _ratio(part: int, whole: int) -> Decimal | None:
     return None if whole == 0 else (Decimal(part) / Decimal(whole)).quantize(Decimal("0.0001"))
 
 
-def summary(session: Session) -> dict[str, Any]:
+def summary(session: Session, pack: str | None = None) -> dict[str, Any]:
+    """Operational metrics, for one pack or (pack None) for everything."""
+    scope = {"pack": pack}
     by_status = dict(
-        session.execute(text("SELECT status, count(*) FROM cases GROUP BY status")).all()
+        session.execute(
+            text(
+                "SELECT status, count(*) FROM cases "
+                "WHERE (CAST(:pack AS text) IS NULL OR pack_id = :pack) GROUP BY status"
+            ),
+            scope,
+        ).all()
     )
 
     first_decisions = dict(
@@ -31,11 +39,14 @@ def summary(session: Session) -> dict[str, Any]:
                     FROM audit_events
                     WHERE event_type = 'invoice.state_changed'
                       AND payload->>'to' IN ('AUTO_APPROVED', 'NEEDS_REVIEW', 'REJECTED')
+                      AND (CAST(:pack AS text) IS NULL
+                           OR case_id IN (SELECT id FROM cases WHERE pack_id = :pack))
                     ORDER BY case_id, id
                 ) first_decision
                 GROUP BY decision
                 """
-            )
+            ),
+            scope,
         ).all()
     )
     decided = sum(first_decisions.values())
@@ -49,9 +60,12 @@ def summary(session: Session) -> dict[str, Any]:
                 FROM audit_events,
                      jsonb_array_elements_text(coalesce(payload->'reasons', '[]'::jsonb)) AS reason
                 WHERE event_type = 'invoice.state_changed' AND payload->>'to' = 'NEEDS_REVIEW'
+                  AND (CAST(:pack AS text) IS NULL
+                       OR case_id IN (SELECT id FROM cases WHERE pack_id = :pack))
                 GROUP BY reason ORDER BY n DESC, reason
                 """
-            )
+            ),
+            scope,
         ).all()
     ]
 
@@ -62,10 +76,14 @@ def summary(session: Session) -> dict[str, Any]:
                 SELECT case_id, min(created_at) AS at
                 FROM audit_events
                 WHERE event_type = 'invoice.state_changed' AND payload->>'to' = 'NEEDS_REVIEW'
+                  AND (CAST(:pack AS text) IS NULL
+                       OR case_id IN (SELECT id FROM cases WHERE pack_id = :pack))
                 GROUP BY case_id
             ), decided AS (
                 SELECT case_id, min(created_at) AS at
                 FROM approvals WHERE reviewer <> 'system'
+                  AND (CAST(:pack AS text) IS NULL
+                       OR case_id IN (SELECT id FROM cases WHERE pack_id = :pack))
                 GROUP BY case_id
             )
             SELECT count(*),
@@ -74,10 +92,16 @@ def summary(session: Session) -> dict[str, Any]:
                    )
             FROM entered JOIN decided USING (case_id)
             """
-        )
+        ),
+        scope,
     ).one()
     overrides = session.execute(
-        text("SELECT count(*) FROM audit_events WHERE event_type = 'invoice.edited'")
+        text(
+            "SELECT count(*) FROM audit_events WHERE event_type = 'invoice.edited' "
+            "AND (CAST(:pack AS text) IS NULL "
+            "OR case_id IN (SELECT id FROM cases WHERE pack_id = :pack))"
+        ),
+        scope,
     ).scalar_one()
 
     llm = [
@@ -98,9 +122,12 @@ def summary(session: Session) -> dict[str, Any]:
                        percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms),
                        percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms),
                        avg(tokens_per_second)
-                FROM llm_calls GROUP BY provider, model ORDER BY provider, model
+                FROM llm_calls WHERE (CAST(:pack AS text) IS NULL OR case_id IN
+                    (SELECT id FROM cases WHERE pack_id = :pack))
+                GROUP BY provider, model ORDER BY provider, model
                 """
-            )
+            ),
+            scope,
         ).all()
     ]
 

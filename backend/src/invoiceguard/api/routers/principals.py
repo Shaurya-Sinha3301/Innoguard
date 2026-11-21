@@ -24,7 +24,7 @@ from invoiceguard.api.auth import (
 from invoiceguard.api.deps import get_session
 from invoiceguard.api.ratelimit import WRITE_GUARDS
 from invoiceguard.db import models as m
-from invoiceguard.packs.registry import get_pack
+from invoiceguard.packs.registry import get_pack, list_packs
 from invoiceguard.workflow import audit
 
 router = APIRouter(prefix="/principals", tags=["principals"])
@@ -35,7 +35,7 @@ class PrincipalIn(BaseModel):
     name: str = Field(min_length=2, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9._ -]*$")
     kind: str = Field(pattern="^(human|agent)$")
     scopes: list[str]
-    packs: list[str] = ["invoices"]
+    packs: list[str] | None = None  # default: every installed pack
 
 
 class PrincipalOut(BaseModel):
@@ -90,7 +90,8 @@ def create_principal(
         raise HTTPException(422, f"a {body.kind} key cannot hold: {sorted(forbidden)}")
     if not body.scopes:
         raise HTTPException(422, "give the key at least one scope")
-    missing = [p for p in body.packs if get_pack(p) is None]
+    packs = body.packs or [p.id for p in list_packs()]
+    missing = [p for p in packs if get_pack(p) is None]
     if missing:
         raise HTTPException(422, f"unknown packs: {missing}")
 
@@ -99,7 +100,7 @@ def create_principal(
         name=body.name.strip(),
         kind=body.kind,
         scopes=sorted(set(body.scopes)),
-        packs=body.packs,
+        packs=packs,
         key_hash=hash_key(key),
         key_prefix=key[:8],
         created_by=admin.name,

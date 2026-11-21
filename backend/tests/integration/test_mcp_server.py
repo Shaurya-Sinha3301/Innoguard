@@ -69,12 +69,12 @@ def issue_key(client, name, scopes):
     return r.json()["key"]
 
 
-def call(client, key, tool, **arguments):
+def call(client, token, tool, **arguments):
     """Call a tool over HTTP. Returns (is_error, content)."""
     response = client.post(
         "/mcp",
         headers={
-            "Authorization": f"Bearer {key}",
+            "Authorization": f"Bearer {token}",
             "Accept": "application/json, text/event-stream",
             "Content-Type": "application/json",
         },
@@ -277,3 +277,134 @@ def test_bad_base64_and_bad_ids_are_plain_errors(client):
     key = issue_key(client, "analyst", ["read", "submit"])
     assert call(client, key, "submit_document", filename="a.pdf", content_base64="!!!")[0]
     assert call(client, key, "get_case", case_id="not-a-uuid")[0]
+
+
+# ------------------------------------------------------------------ the second pack
+
+
+def make_expense(session_factory, label, index):
+    from invoiceguard.packs.expenses import service as expense_service
+    from invoiceguard.packs.expenses.generator import TODAY, generate_expense_scenario
+
+    scenario = generate_expense_scenario(random.Random(index), index, label)
+    with session_factory() as session:
+        expense_service.seed_reference_data(session, scenario)
+        row = expense_service.submit_expense(session, scenario.expense, submitted_on=TODAY)
+        session.commit()
+        return str(row.id)
+
+
+def issue_key_for(client, name, scopes, packs):
+    r = client.post(
+        "/principals",
+        headers=ADMIN,
+        json={"name": name, "kind": "agent", "scopes": scopes, "packs": packs},
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["key"]
+
+
+def test_a_key_issued_for_invoices_cannot_see_expenses(client, session_factory):
+    from invoiceguard.packs.expenses.generator import ExpenseLabel
+
+    key = issue_key_for(client, "ap-agent", ["read", "propose"], ["invoices"])
+    case_id = make_expense(session_factory, ExpenseLabel.OVER_CATEGORY_CAP, 5)
+    assert call(client, key, "list_cases", pack="expenses")[0]
+    is_error, message = call(client, key, "get_case", case_id=case_id)
+    assert is_error and "cannot use" in message
+    is_error, message = call(
+        client, key, "propose_decision", case_id=case_id, decision="approve", rationale="looks ok"
+    )
+    assert is_error and "cannot use" in message
+
+
+def test_a_key_issued_for_expenses_can_read_and_propose_on_a_claim(client, session_factory):
+    from invoiceguard.packs.expenses.generator import ExpenseLabel
+
+    key = issue_key_for(client, "exp-agent", ["read", "propose"], ["expenses"])
+    case_id = make_expense(session_factory, ExpenseLabel.OVER_CATEGORY_CAP, 5)
+    is_error, rows = call(client, key, "list_cases", pack="expenses", status="NEEDS_REVIEW")
+    assert not is_error and [r["case_id"] for r in rows] == [case_id]
+    assert rows[0]["pack"] == "expenses"
+    is_error, case = call(client, key, "get_case", case_id=case_id)
+    assert not is_error and "OVER_CATEGORY_CAP" in case["reasons"]
+    assert case["checked_against"]["category"]["cap"] == "3000.0000"
+    assert case["checked_against"]["card_transaction"]["clean"] is True
+    is_error, out = call(
+        client,
+        key,
+        "propose_decision",
+        case_id=case_id,
+        decision="hold",
+        rationale="ask the manager",
+    )
+    assert not is_error and out["suggestion_id"] > 0
+
+
+def test_expense_reference_lookups_are_served_by_the_pack(client, session_factory):
+    from invoiceguard.packs.expenses.generator import ExpenseLabel
+
+    key = issue_key_for(client, "exp-agent", ["read"], ["expenses"])
+    make_expense(session_factory, ExpenseLabel.CLEAN, 6)
+    is_error, emp = call(client, key, "lookup", name="employee", key="E-6", pack="expenses")
+    assert not is_error and emp["name"] == "Employee 6"
+    is_error, cat = call(client, key, "lookup", name="category", key="meals", pack="expenses")
+    assert not is_error and cat["blocked"] is False
+    assert call(client, key, "lookup", name="vendor", key="V001", pack="expenses")[0]
+
+
+def test_an_expense_is_posted_with_a_grant_exactly_like_an_invoice(client, session_factory):
+    from invoiceguard.packs.expenses.generator import ExpenseLabel
+
+    key = issue_key_for(client, "exp-poster", ["read", "post"], ["expenses"])
+    case_id = make_expense(session_factory, ExpenseLabel.CLEAN, 7)
+    grant = client.post(f"/invoices/{case_id}/grants", headers=REVIEWER, json={}).json()["id"]
+    is_error, out = call(client, key, "post_case", case_id=case_id, grant_id=grant)
+    assert not is_error and out["outcome"] == "POSTED"
+    is_error, message = call(client, key, "post_case", case_id=case_id, grant_id=grant)
+    assert is_error and "already been used" in message
+
+
+def test_cases_and_invoices_routes_split_by_pack(client, session_factory):
+    from invoiceguard.packs.expenses.generator import ExpenseLabel
+
+    invoice_id = make_case(session_factory, CaseLabel.PRICE_VARIANCE, 5)
+    expense_id = make_expense(session_factory, ExpenseLabel.OVER_CATEGORY_CAP, 5)
+
+    def ids(path):
+        return {c["id"] for c in client.get(path, headers=REVIEWER).json()}
+
+    # (Seeded earlier claims and invoices sit in the lists too, so check membership.)
+    assert invoice_id in ids("/invoices") and expense_id not in ids("/invoices")
+    assert expense_id in ids("/cases?pack=expenses")
+    assert invoice_id not in ids("/cases?pack=expenses")
+    assert {invoice_id, expense_id} <= ids("/cases")
+    detail = client.get(f"/cases/{expense_id}", headers=REVIEWER).json()
+    assert detail["pack_id"] == "expenses"
+    assert detail["context"]["card_transaction"]["clean"] is True
+    assert detail["context"]["employee"]["employee_id"] == "E-5"
+    assert client.get("/cases?pack=payroll", headers=REVIEWER).status_code == 404
+
+
+def test_a_key_for_one_pack_does_not_see_the_other_over_rest(client, session_factory):
+    from invoiceguard.packs.expenses.generator import ExpenseLabel
+
+    key = issue_key_for(client, "ap-only", ["read"], ["invoices"])
+    expense_id = make_expense(session_factory, ExpenseLabel.CLEAN, 8)
+    h = {"Authorization": f"Bearer {key}"}
+    assert client.get(f"/cases/{expense_id}", headers=h).status_code == 404
+    assert client.get("/cases?pack=expenses", headers=h).status_code == 404
+    assert expense_id not in {c["id"] for c in client.get("/cases", headers=h).json()}
+
+
+def test_metrics_can_be_scoped_to_a_pack(client, session_factory):
+    from invoiceguard.packs.expenses.generator import ExpenseLabel
+
+    make_case(session_factory, CaseLabel.CLEAN, 1)
+    make_expense(session_factory, ExpenseLabel.OVER_CATEGORY_CAP, 5)
+    both = client.get("/metrics/summary", headers=REVIEWER).json()
+    only = client.get("/metrics/summary?pack=expenses", headers=REVIEWER).json()
+    assert both["invoices_by_status"]["AUTO_APPROVED"] == 1
+    assert "AUTO_APPROVED" not in only["invoices_by_status"]
+    assert only["invoices_by_status"]["NEEDS_REVIEW"] == 1
+    assert only["decisions"]["decided"] == 1

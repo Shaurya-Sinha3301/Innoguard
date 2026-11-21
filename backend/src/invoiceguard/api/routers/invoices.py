@@ -11,6 +11,7 @@ from invoiceguard.api.deps import get_session
 from invoiceguard.api.ratelimit import WRITE_GUARDS
 from invoiceguard.db import models as m
 from invoiceguard.domain import models as d
+from invoiceguard.packs.registry import DEFAULT_PACK, require_pack
 from invoiceguard.workflow import repo, service
 from invoiceguard.workflow.errors import (
     IllegalTransition,
@@ -64,9 +65,18 @@ def list_invoices(
     session: Session = Depends(get_session),
     _user: str = Depends(current_user),
 ) -> list[dict]:
+    return list_cases_in(session, status=status, limit=limit, pack=DEFAULT_PACK)
+
+
+def list_cases_in(
+    session: Session, *, status: str | None, limit: int, pack: str | None
+) -> list[dict]:
+    """Cases newest first, for one pack or (pack None) for all of them."""
     query = select(m.Case).order_by(m.Case.created_at.desc()).limit(limit)
     if status:
         query = query.where(m.Case.status == status)
+    if pack:
+        query = query.where(m.Case.pack_id == pack)
     rows = list(session.scalars(query))
     reasons = _latest_reasons(session, [row.id for row in rows])
     return [
@@ -102,9 +112,13 @@ def get_invoice(
     session: Session = Depends(get_session),
     _user: str = Depends(current_user),
 ) -> dict:
+    return case_detail(session, case_id)
+
+
+def case_detail(session: Session, case_id: uuid.UUID) -> dict:
     row = session.get(m.Case, case_id)
     if row is None:
-        raise HTTPException(404, "invoice not found")
+        raise HTTPException(404, "case not found")
     approvals = session.scalars(
         select(m.Approval).where(m.Approval.case_id == case_id).order_by(m.Approval.id)
     ).all()
@@ -142,6 +156,8 @@ def get_invoice(
         "approvals": approvals,
         "timeline": timeline,
         "llm_calls": llm_calls,
+        "data": row.data or {},
+        "context": require_pack(row.pack_id).context(session, row),
     }
 
 

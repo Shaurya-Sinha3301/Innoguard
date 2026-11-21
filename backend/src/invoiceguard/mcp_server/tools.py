@@ -16,6 +16,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from invoiceguard.db import models as m
+from invoiceguard.packs.registry import require_pack
 
 _ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 MAX_HISTORY = 50
@@ -132,11 +133,20 @@ def _check_uuid(value: str) -> uuid.UUID:
 
 
 def list_cases(
-    session: Session, status: str | None = None, vendor_id: str | None = None, limit: int = 20
+    session: Session,
+    pack: str = "invoices",
+    status: str | None = None,
+    vendor_id: str | None = None,
+    limit: int = 20,
 ) -> list[dict[str, Any]]:
     if not isinstance(limit, int) or limit < 1:
         raise ToolInputError("limit must be a positive integer")
-    query = select(m.Case).order_by(m.Case.created_at.desc()).limit(min(limit, MAX_CASES))
+    query = (
+        select(m.Case)
+        .where(m.Case.pack_id == _check_id("pack", pack))
+        .order_by(m.Case.created_at.desc())
+        .limit(min(limit, MAX_CASES))
+    )
     if status:
         query = query.where(m.Case.status == _check_id("status", status))
     if vendor_id:
@@ -144,8 +154,9 @@ def list_cases(
     return [
         {
             "case_id": str(row.id),
+            "pack": row.pack_id,
             "ref": row.invoice_number,
-            "vendor_id": row.vendor_id,
+            "vendor_id": row.vendor_id,  # the counterparty: the vendor, or the merchant
             "po_number": row.po_number,
             "currency": row.currency,
             "total": _money(row.total),
@@ -189,6 +200,8 @@ def get_case(session: Session, case_id: str) -> dict[str, Any] | None:
         "notice": UNTRUSTED_NOTICE,
         "case_id": str(row.id),
         "pack": row.pack_id,
+        "data": row.data or {},
+        "checked_against": require_pack(row.pack_id).context(session, row),
         "ref": row.invoice_number,
         "vendor_id": row.vendor_id,
         "po_number": row.po_number,
@@ -259,7 +272,7 @@ def get_audit(session: Session, case_id: str, limit: int = 100) -> list[dict[str
 LOOKUPS = ("vendor", "purchase_order", "goods_receipts", "vendor_invoices")
 
 
-def lookup(session: Session, name: str, key: str) -> Any:
+def invoice_lookup(session: Session, name: str, key: str) -> Any:
     """Reference data the invoices pack keeps: vendors, purchase orders, receipts, history."""
     if name == "vendor":
         return get_vendor(session, key)
@@ -270,3 +283,8 @@ def lookup(session: Session, name: str, key: str) -> Any:
     if name == "vendor_invoices":
         return get_invoice_history(session, key)
     raise ToolInputError(f"name must be one of: {', '.join(LOOKUPS)}")
+
+
+def lookup(session: Session, name: str, key: str, pack: str = "invoices") -> Any:
+    """Reference data from the pack that owns it."""
+    return require_pack(_check_id("pack", pack)).lookup(session, name, key)

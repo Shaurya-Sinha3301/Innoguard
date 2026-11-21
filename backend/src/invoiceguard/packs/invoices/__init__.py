@@ -65,7 +65,7 @@ class InvoicePack:
     def lookup(self, session: Session, name: str, key: str) -> Any:
         from invoiceguard.mcp_server import tools
 
-        return tools.lookup(session, name, key)
+        return tools.invoice_lookup(session, name, key)
 
 
 _MANIFEST = load_manifest(Path(__file__).with_name("manifest.yaml"))

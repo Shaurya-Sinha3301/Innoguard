@@ -7,7 +7,15 @@ from fastapi.responses import JSONResponse
 
 from invoiceguard.api import health
 from invoiceguard.api.auth import Principal, current_principal
-from invoiceguard.api.routers import agent, documents, invoices, metrics, packs, principals
+from invoiceguard.api.routers import (
+    agent,
+    cases,
+    documents,
+    invoices,
+    metrics,
+    packs,
+    principals,
+)
 from invoiceguard.config import settings
 from invoiceguard.mcp_server import server as mcp_module
 
@@ -29,6 +37,7 @@ app.add_middleware(
     allow_headers=["X-API-Key", "Authorization", "Content-Type"],
 )
 app.include_router(invoices.router)
+app.include_router(cases.router)
 app.include_router(agent.router)
 app.include_router(documents.router)
 app.include_router(metrics.router)

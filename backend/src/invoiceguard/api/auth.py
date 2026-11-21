@@ -45,10 +45,16 @@ class Principal:
     name: str
     kind: str  # "human" or "agent"
     scopes: frozenset[str]
-    packs: tuple[str, ...] = ("invoices",)
+    packs: tuple[str, ...] = ()
 
     def can(self, scope: str) -> bool:
         return scope in self.scopes
+
+
+def all_pack_ids() -> tuple[str, ...]:
+    from invoiceguard.packs.registry import list_packs
+
+    return tuple(p.id for p in list_packs())
 
 
 def hash_key(key: str) -> str:
@@ -77,7 +83,9 @@ def _from_environment(key: str) -> Principal | None:
     for known, name in parse_api_keys(settings.api_keys).items():
         if secrets.compare_digest(known, key):
             scopes = HUMAN_SCOPES | ({"admin"} if name in _admin_names() else set())
-            return Principal(name=name, kind="human", scopes=frozenset(scopes))
+            return Principal(
+                name=name, kind="human", scopes=frozenset(scopes), packs=all_pack_ids()
+            )
     return None
 
 

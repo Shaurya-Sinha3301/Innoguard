@@ -12,7 +12,8 @@ router = APIRouter(tags=["metrics"], dependencies=[Depends(require_scope("read")
 
 @router.get("/metrics/summary")
 def metrics_summary(
+    pack: str | None = None,
     session: Session = Depends(get_session),
     _user: str = Depends(current_user),
 ) -> dict[str, Any]:
-    return reporting.summary(session)
+    return reporting.summary(session, pack)

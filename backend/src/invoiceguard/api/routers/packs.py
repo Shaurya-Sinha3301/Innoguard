@@ -2,10 +2,10 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from invoiceguard.api.auth import current_user
+from invoiceguard.api.auth import require_scope
 from invoiceguard.packs.registry import get_pack, list_packs
 
-router = APIRouter(prefix="/packs", tags=["packs"], dependencies=[Depends(current_user)])
+router = APIRouter(prefix="/packs", tags=["packs"], dependencies=[Depends(require_scope("read"))])
 
 
 @router.get("")

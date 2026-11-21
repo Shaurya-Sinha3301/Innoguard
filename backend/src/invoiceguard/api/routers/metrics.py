@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from invoiceguard import reporting
-from invoiceguard.api.auth import current_user
+from invoiceguard.api.auth import current_user, require_scope
 from invoiceguard.api.deps import get_session
 
-router = APIRouter(tags=["metrics"])
+router = APIRouter(tags=["metrics"], dependencies=[Depends(require_scope("read"))])
 
 
 @router.get("/metrics/summary")

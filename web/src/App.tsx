@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, FileStack, Files, LogOut, Moon, ShieldCheck, Sun, TriangleAlert, Upload as UploadIcon } from "lucide-react";
+import { BarChart3, FileStack, Files, LogOut, Moon, Plug, ShieldCheck, Sun, TriangleAlert, Upload as UploadIcon } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { API_URL, api, ApiError, getApiKey, setApiKey } from "./api";
 import { Button, cx, ErrorNote, Module } from "./components/ui";
 import { setPack } from "./pack";
+import Connections from "./pages/Connections";
 import FailedJobs from "./pages/FailedJobs";
 import InvoiceDetailPage from "./pages/InvoiceDetail";
 import InvoiceList from "./pages/InvoiceList";
@@ -71,14 +72,15 @@ function SignIn({ onSignIn }: { onSignIn: () => void }) {
   async function submit() {
     setChecking(true);
     setError(null);
-    setApiKey(key.trim());
+    // A pasted "key:name" pair works too: the name is never part of the key.
+    setApiKey(key.trim().split(":")[0]);
     try {
       await api.me();
       onSignIn();
     } catch (e) {
       setApiKey(null);
       if (e instanceof ApiError && e.status === 401) {
-        setError(new Error("That key was not recognised. Type only the part before any colon."));
+        setError(new Error("That key was not recognised. Check it against the key your administrator gave you."));
       } else if (e instanceof ApiError) {
         setError(e);
       } else {
@@ -188,6 +190,7 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
             <NavTab to="/failed" icon={FileStack} label="Failed jobs" count={failed} alert />
             <NavTab to="/metrics" icon={BarChart3} label="Metrics" />
             <NavTab to="/upload" icon={UploadIcon} label="Upload" />
+            {me.data?.scopes.includes("admin") && <NavTab to="/connections" icon={Plug} label="Connections" />}
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden lg:inline">
@@ -215,6 +218,7 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
           <Route path="/failed" element={<FailedJobs />} />
           <Route path="/metrics" element={<Metrics />} />
           <Route path="/upload" element={<Upload />} />
+          <Route path="/connections" element={<Connections />} />
           <Route path="*" element={<Navigate to="/review" replace />} />
         </Routes>
       </main>

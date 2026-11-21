@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 MONEY = sa.Numeric(18, 4)
@@ -266,3 +266,26 @@ class AuditEvent(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=_now()
     )
+
+
+class Principal(Base):
+    """A signed-in identity that is not an environment-configured reviewer: a person or an
+    agent. Only the SHA-256 of its key is stored, so a database leak does not leak keys."""
+
+    __tablename__ = "principals"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        sa.Uuid, primary_key=True, server_default=sa.text("gen_random_uuid()")
+    )
+    name: Mapped[str] = mapped_column(sa.Text, unique=True)
+    kind: Mapped[str] = mapped_column(sa.Text)  # "human" or "agent"
+    scopes: Mapped[list[str]] = mapped_column(ARRAY(sa.Text))
+    packs: Mapped[list[str]] = mapped_column(ARRAY(sa.Text))
+    key_hash: Mapped[str] = mapped_column(sa.Text, unique=True)
+    key_prefix: Mapped[str] = mapped_column(sa.Text)  # first characters, for telling keys apart
+    disabled: Mapped[bool] = mapped_column(server_default=sa.false())
+    created_by: Mapped[str] = mapped_column(sa.Text)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=_now()
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))

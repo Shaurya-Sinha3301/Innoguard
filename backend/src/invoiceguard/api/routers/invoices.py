@@ -6,7 +6,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from invoiceguard.api import schemas
-from invoiceguard.api.auth import current_user
+from invoiceguard.api.auth import current_user, require_scope
 from invoiceguard.api.deps import get_session
 from invoiceguard.api.ratelimit import WRITE_GUARDS
 from invoiceguard.db import models as m
@@ -20,7 +20,13 @@ from invoiceguard.workflow.errors import (
 )
 from invoiceguard.workflow.posting import post_invoice
 
-router = APIRouter(prefix="/invoices", tags=["invoices"])
+router = APIRouter(
+    prefix="/invoices", tags=["invoices"], dependencies=[Depends(require_scope("read"))]
+)
+
+SUBMIT = [Depends(require_scope("submit")), *WRITE_GUARDS]
+REVIEW = [Depends(require_scope("review")), *WRITE_GUARDS]
+POST = [Depends(require_scope("post")), *WRITE_GUARDS]
 
 
 def _http_error(exc: Exception) -> HTTPException:
@@ -31,7 +37,7 @@ def _http_error(exc: Exception) -> HTTPException:
     return HTTPException(422, str(exc))
 
 
-@router.post("", response_model=schemas.InvoiceOut, status_code=201, dependencies=WRITE_GUARDS)
+@router.post("", response_model=schemas.InvoiceOut, status_code=201, dependencies=SUBMIT)
 def submit(
     body: schemas.InvoiceIn,
     session: Session = Depends(get_session),
@@ -161,15 +167,15 @@ def _decide(approve: bool):
     return endpoint
 
 
-router.post("/{invoice_id}/approve", response_model=schemas.InvoiceOut, dependencies=WRITE_GUARDS)(
+router.post("/{invoice_id}/approve", response_model=schemas.InvoiceOut, dependencies=REVIEW)(
     _decide(True)
 )
-router.post("/{invoice_id}/reject", response_model=schemas.InvoiceOut, dependencies=WRITE_GUARDS)(
+router.post("/{invoice_id}/reject", response_model=schemas.InvoiceOut, dependencies=REVIEW)(
     _decide(False)
 )
 
 
-@router.post("/{invoice_id}/edit", response_model=schemas.InvoiceOut, dependencies=WRITE_GUARDS)
+@router.post("/{invoice_id}/edit", response_model=schemas.InvoiceOut, dependencies=REVIEW)
 def edit(
     invoice_id: uuid.UUID,
     body: schemas.EditIn,
@@ -193,7 +199,7 @@ def edit(
         raise _http_error(exc) from exc
 
 
-@router.post("/{invoice_id}/post", response_model=schemas.PostOut, dependencies=WRITE_GUARDS)
+@router.post("/{invoice_id}/post", response_model=schemas.PostOut, dependencies=POST)
 def post(
     invoice_id: uuid.UUID,
     session: Session = Depends(get_session),

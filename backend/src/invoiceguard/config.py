@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6380/0"
     # Reviewer identities as "key:name" pairs, comma separated. Empty means nobody can sign in.
     api_keys: str = ""
+    # Reviewer names (from API_KEYS) that may also manage principals and keys.
+    admin_users: str = ""
     # Extraction provider and model. "groq" uses GROQ_API_KEY; "anthropic" uses
     # ANTHROPIC_API_KEY (set EXTRACTION_MODEL to a Claude model then, e.g. claude-haiku-5-5).
     extraction_provider: str = "groq"

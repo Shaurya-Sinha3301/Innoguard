@@ -69,7 +69,7 @@ def payload_for(session_factory, label, index):
 
 
 def test_me_returns_the_reviewer_for_the_key(client):
-    assert client.get("/me", headers=RAVI).json() == {"name": "ravi"}
+    assert client.get("/me", headers=RAVI).json()["name"] == "ravi"
     assert client.get("/me").status_code == 401
 
 

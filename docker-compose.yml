@@ -7,6 +7,7 @@ x-backend: &backend
     REDIS_URL: redis://redis:6379/0
     # Local development only. Real deployments set their own keys as secrets.
     API_KEYS: dev-key:dev-reviewer
+    ADMIN_USERS: dev-reviewer
     # "replay" uses recorded extractions only and never calls the model. For live
     # extraction set EXTRACTION_MODE=live and GROQ_API_KEY in your shell (or
     # EXTRACTION_PROVIDER=anthropic with a Claude model and ANTHROPIC_API_KEY).

@@ -31,6 +31,9 @@ services:
         sync: false
       - key: API_KEYS
         sync: false
+      # Reviewer names (from API_KEYS) allowed to issue and disable agent keys.
+      - key: ADMIN_USERS
+        sync: false
       - key: CORS_ORIGINS
         sync: false
       - key: EXTRACTION_MODE

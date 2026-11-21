@@ -62,6 +62,20 @@ const json = (body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
+export type Me = { name: string; kind: "human" | "agent"; scopes: string[]; packs: string[] };
+
+export type PrincipalRow = {
+  id: string;
+  name: string;
+  kind: string;
+  scopes: string[];
+  packs: string[];
+  key_prefix: string;
+  disabled: boolean;
+  created_by: string;
+  last_used_at: string | null;
+};
+
 export type Invoice = {
   id: string;
   invoice_number: string | null;
@@ -166,7 +180,11 @@ import type { Manifest } from "./pack";
 
 export const api = {
   pack: (id: string) => request<Manifest>(`/packs/${id}`),
-  me: () => request<{ name: string }>("/me"),
+  me: () => request<Me>("/me"),
+  principals: () => request<PrincipalRow[]>("/principals"),
+  createPrincipal: (body: { name: string; kind: "agent" | "human"; scopes: string[] }) =>
+    request<PrincipalRow & { key: string }>("/principals", json(body)),
+  disablePrincipal: (id: string) => request<PrincipalRow>(`/principals/${id}/disable`, { method: "POST" }),
   listInvoices: (status?: string) =>
     request<Invoice[]>(`/invoices?limit=200${status ? `&status=${encodeURIComponent(status)}` : ""}`),
   invoice: (id: string) => request<InvoiceDetail>(`/invoices/${id}`),

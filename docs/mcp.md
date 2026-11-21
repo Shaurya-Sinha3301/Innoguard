@@ -9,8 +9,9 @@ person issues for that one case.
 
 ## 1. Get a key
 
-An administrator opens **Connections** in the review UI, names the agent, picks what it may
-do, and copies the key once. Only a hash is stored, so a lost key cannot be recovered:
+Sign in to the review UI, open **API keys**, say what the key is for, pick what it may do, and
+copy it once. A key can do no more than you can, and stops working if your account is
+disabled. Only a hash is stored, so a lost key cannot be recovered:
 disable it and issue another.
 
 | Scope | The agent may |
@@ -22,8 +23,7 @@ disable it and issue another.
 
 Agent keys can never hold `review` or `admin`. The API refuses it when the key is created.
 
-Administrators are the reviewer names listed in `ADMIN_USERS`. Keys can also be issued with
-`POST /principals`.
+Administrators can also issue keys for others with `POST /principals`.
 
 ## 2. Connect
 

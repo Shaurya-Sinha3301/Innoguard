@@ -45,8 +45,11 @@ switch to a Render Key Value instance (paid) or another Redis.
    - `DATABASE_URL_UNPOOLED`: Neon's **direct** URL; migrations use it.
    - `API_KEYS`: reviewer keys as `key:name` pairs, for example
      `<a long random string>:demo-reviewer`. Generate the key yourself; never commit it.
-   - `ADMIN_USERS`: the reviewer name(s) from `API_KEYS` that may issue agent keys, for
-     example `demo-reviewer`. Leave empty to disable key management.
+   - `ADMIN_EMAILS`: the email address(es) that become administrators when they create an
+     account. **Set this before the first deploy that includes accounts**: if it is empty, the
+     first person to sign up becomes the administrator.
+   - `SIGNUP_ENABLED`: `true` lets anyone create an account (fine for a demo); `false` closes it.
+   - `ADMIN_USERS`: legacy; shared-key reviewer names that may issue agent keys.
    - `CORS_ORIGINS`: the Vercel URL from step 4 (you can set it after step 4).
 
    `PUBLIC_URL` is set in `render.yaml` to this service's address. Change it if your Render

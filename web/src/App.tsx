@@ -64,13 +64,37 @@ function Brand() {
   );
 }
 
-function SignIn({ onSignIn }: { onSignIn: () => void }) {
+function AuthScreen({ onSignIn }: { onSignIn: () => void }) {
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [key, setKey] = useState("");
   const [error, setError] = useState<unknown>(null);
-  const [checking, setChecking] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  function explain(e: unknown): Error {
+    if (e instanceof ApiError) return new Error(e.status === 401 ? "Wrong email or password." : e.message);
+    // fetch itself failed: wrong address, the API is asleep or starting, or CORS blocked it.
+    return new Error(`Could not reach the server at ${API_URL}. If it was idle it can take up to a minute to wake up; try again.`);
+  }
 
   async function submit() {
-    setChecking(true);
+    setBusy(true);
+    setError(null);
+    try {
+      const result = mode === "login" ? await api.login(email, password) : await api.signup(email, name, password);
+      setApiKey(result.token);
+      onSignIn();
+    } catch (e) {
+      setError(explain(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function useKey() {
+    setBusy(true);
     setError(null);
     // A pasted "key:name" pair works too: the name is never part of the key.
     setApiKey(key.trim().split(":")[0]);
@@ -79,33 +103,26 @@ function SignIn({ onSignIn }: { onSignIn: () => void }) {
       onSignIn();
     } catch (e) {
       setApiKey(null);
-      if (e instanceof ApiError && e.status === 401) {
-        setError(new Error("That key was not recognised. Check it against the key your administrator gave you."));
-      } else if (e instanceof ApiError) {
-        setError(e);
-      } else {
-        // fetch itself failed: wrong address, the API is asleep or starting, or CORS blocked it.
-        setError(
-          new Error(
-            `Could not reach the server at ${API_URL}. If it was idle it can take up to a minute to wake up; try again.`,
-          ),
-        );
-      }
+      setError(e instanceof ApiError && e.status === 401 ? new Error("That key was not recognised.") : explain(e));
     } finally {
-      setChecking(false);
+      setBusy(false);
     }
   }
 
+  const valid = email.includes("@") && password.length >= (mode === "signup" ? 10 : 1) && (mode === "login" || name.trim().length >= 2);
+
   return (
-    <main className="mx-auto mt-20 max-w-md px-4">
+    <main className="mx-auto mt-16 max-w-md px-4">
       <div className="mb-6 flex items-center justify-between">
         <Brand />
         <ThemeToggle />
       </div>
-      <h1 className="mb-4 font-display text-2xl font-bold tracking-tight">Sign in</h1>
-      <Module title="Reviewer access" bodyClassName="space-y-3 p-4">
+      <h1 className="mb-4 font-display text-2xl font-bold tracking-tight">{mode === "login" ? "Sign in" : "Create an account"}</h1>
+      <Module title={mode === "login" ? "Welcome back" : "Get started"} bodyClassName="space-y-3 p-4">
         <p className="text-sm text-ink-2">
-          Reviewers sign in with their API key. Every decision is recorded under the name the key belongs to.
+          {mode === "login"
+            ? "Sign in with your email. Every decision is recorded under your name."
+            : "Create an account to review cases. The first account on a new deployment becomes its administrator."}
         </p>
         <form
           className="space-y-3"
@@ -114,26 +131,45 @@ function SignIn({ onSignIn }: { onSignIn: () => void }) {
             void submit();
           }}
         >
-          <label className="block text-sm font-semibold" htmlFor="api-key">
-            API key
+          {mode === "signup" && (
+            <label className="block text-sm font-semibold" htmlFor="name">
+              Name
+              <input id="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block h-10 w-full rounded-lg border border-line px-3 text-sm font-normal" />
+            </label>
+          )}
+          <label className="block text-sm font-semibold" htmlFor="email">
+            Email
+            <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 block h-10 w-full rounded-lg border border-line px-3 text-sm font-normal" autoFocus />
           </label>
-          <input
-            id="api-key"
-            type="password"
-            autoComplete="off"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            className="h-10 w-full rounded-lg border border-line px-3 font-mono text-sm"
-            autoFocus
-          />
-          <Button type="submit" size="lg" className="w-full" disabled={!key.trim() || checking}>
-            {checking ? "Checking…" : "Sign in"}
+          <label className="block text-sm font-semibold" htmlFor="password">
+            Password {mode === "signup" && <span className="font-normal text-ink-2">(at least 10 characters)</span>}
+            <input id="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 block h-10 w-full rounded-lg border border-line px-3 text-sm font-normal" />
+          </label>
+          <Button type="submit" size="lg" className="w-full" disabled={!valid || busy}>
+            {busy ? "One moment…" : mode === "login" ? "Sign in" : "Create account"}
           </Button>
           <ErrorNote error={error} />
         </form>
+        <p className="text-sm text-ink-2">
+          {mode === "login" ? "New here? " : "Already have an account? "}
+          <button type="button" className="font-semibold text-accent hover:underline" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(null); }}>
+            {mode === "login" ? "Create an account" : "Sign in"}
+          </button>
+        </p>
         {DEMO_HINT && <p className="text-xs text-ink-2">{DEMO_HINT}</p>}
         <SyntheticLabel />
       </Module>
+
+      <details className="mt-4 rounded-xl border border-line bg-surface p-4 text-sm">
+        <summary className="cursor-pointer font-semibold">Use an API key instead</summary>
+        <form className="mt-3 space-y-3" onSubmit={(e) => { e.preventDefault(); void useKey(); }}>
+          <p className="text-ink-2">For a shared reviewer key your administrator gave you.</p>
+          <input aria-label="API key" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} className="h-10 w-full rounded-lg border border-line px-3 font-mono text-sm" />
+          <Button type="submit" variant="secondary" disabled={!key.trim() || busy}>
+            Use this key
+          </Button>
+        </form>
+      </details>
     </main>
   );
 }
@@ -181,7 +217,7 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
             <NavTab to="/failed" icon={FileStack} label="Failed jobs" count={failed} alert />
             <NavTab to="/metrics" icon={BarChart3} label="Metrics" />
             <NavTab to="/upload" icon={UploadIcon} label="Upload" />
-            {me.data?.scopes.includes("admin") && <NavTab to="/connections" icon={Plug} label="Connections" />}
+            {(me.data?.account || me.data?.scopes.includes("admin")) && <NavTab to="/connections" icon={Plug} label="API keys" />}
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden lg:inline">
@@ -237,11 +273,13 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
 export default function App() {
   const [signedIn, setSignedIn] = useState(Boolean(getApiKey()));
   const queryClient = useQueryClient();
-  if (!signedIn) return <SignIn onSignIn={() => setSignedIn(true)} />;
+  if (!signedIn) return <AuthScreen onSignIn={() => setSignedIn(true)} />;
   return (
     <PackProvider>
       <Shell
         onSignOut={() => {
+          // End the session on the server too, so the token cannot be reused.
+          void api.logout().catch(() => undefined);
           setApiKey(null);
           queryClient.clear();
           setSignedIn(false);

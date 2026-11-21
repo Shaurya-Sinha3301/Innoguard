@@ -62,7 +62,38 @@ const json = (body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
-export type Me = { name: string; kind: "human" | "agent"; scopes: string[]; packs: string[] };
+export type Me = {
+  name: string;
+  kind: "human" | "agent";
+  scopes: string[];
+  packs: string[];
+  email?: string | null;
+  /** True when signed in with an account (email and password), as opposed to a shared key. */
+  account?: boolean;
+};
+
+export type UserRow = {
+  id: string;
+  email: string;
+  name: string;
+  scopes: string[];
+  packs: string[];
+  is_admin: boolean;
+  disabled: boolean;
+  last_login_at: string | null;
+};
+
+export type MyKey = {
+  id: string;
+  name: string;
+  scopes: string[];
+  packs: string[];
+  key_prefix: string;
+  disabled: boolean;
+  last_used_at: string | null;
+};
+
+export type SessionResult = { token: string; expires_at: string; user: UserRow };
 
 export type PrincipalRow = {
   id: string;
@@ -212,6 +243,17 @@ export type MetricsSummary = {
 import type { Manifest } from "./pack";
 
 export const api = {
+  login: (email: string, password: string) => request<SessionResult>("/auth/login", json({ email, password })),
+  signup: (email: string, name: string, password: string) =>
+    request<SessionResult>("/auth/signup", json({ email, name, password })),
+  logout: () => request<Blob>("/auth/logout", { method: "POST" }),
+  myKeys: () => request<MyKey[]>("/me/keys"),
+  createMyKey: (body: { label: string; scopes: string[]; packs?: string[] }) =>
+    request<MyKey & { key: string }>("/me/keys", json(body)),
+  disableMyKey: (id: string) => request<MyKey>(`/me/keys/${id}/disable`, { method: "POST" }),
+  users: () => request<UserRow[]>("/users"),
+  setUserDisabled: (id: string, disabled: boolean) =>
+    request<UserRow>(`/users/${id}/${disabled ? "disable" : "enable"}`, { method: "POST" }),
   packs: () => request<{ id: string; name: string; description: string }[]>("/packs"),
   pack: (id: string) => request<Manifest>(`/packs/${id}`),
   listCases: (pack: string, status?: string) =>

@@ -56,14 +56,23 @@ def test_the_database_refuses_writes_in_a_tool_session(session_factory, seeded):
     assert "read-only" in str(exc.value)
 
 
-def test_server_exposes_only_the_read_only_tools():
+def test_server_exposes_a_fixed_set_of_tools_and_only_three_can_write():
     from invoiceguard.mcp_server.server import mcp
 
     listed = asyncio.run(mcp.list_tools())
-    assert sorted(tool.name for tool in listed) == [
-        "get_goods_receipts",
-        "get_invoice_history",
-        "get_purchase_order",
-        "get_vendor",
+    names = sorted(tool.name for tool in listed)
+    assert names == [
+        "describe_pack",
+        "get_audit",
+        "get_case",
+        "list_cases",
+        "list_packs_available",
+        "lookup",
+        "post_case",
+        "propose_decision",
+        "submit_document",
     ]
-    assert all(tool.annotations and tool.annotations.read_only_hint for tool in listed)
+    writers = {t.name for t in listed if not (t.annotations and t.annotations.read_only_hint)}
+    assert writers == {"post_case", "propose_decision", "submit_document"}
+    # A person decides: no tool approves, rejects or edits.
+    assert not [n for n in names if any(w in n for w in ("approve", "reject", "edit"))]

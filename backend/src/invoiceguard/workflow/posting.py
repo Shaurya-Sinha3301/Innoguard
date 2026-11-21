@@ -45,6 +45,23 @@ def idempotency_key(case_id: uuid.UUID, version: int, total: Decimal) -> str:
     return hashlib.sha256(f"{case_id}:{version}:{amount}".encode()).hexdigest()
 
 
+def has_valid_approval(session: Session, row: m.Case) -> bool:
+    """An approval exists for this exact version and amount."""
+    return (
+        session.scalar(
+            select(m.Approval.id)
+            .where(
+                m.Approval.case_id == row.id,
+                m.Approval.case_version == row.version,
+                m.Approval.decision.in_(_APPROVING_DECISIONS),
+                m.Approval.amount == row.total,
+            )
+            .limit(1)
+        )
+        is not None
+    )
+
+
 def post_invoice(session: Session, case_id: uuid.UUID, *, actor: str) -> PostResult:
     row = lock_invoice(session, case_id)
     key = idempotency_key(row.id, row.version, row.total)
@@ -55,17 +72,7 @@ def post_invoice(session: Session, case_id: uuid.UUID, *, actor: str) -> PostRes
 
     if S(row.status) not in POSTABLE:
         raise NotApproved(f"invoice is {row.status}, not approved")
-    approval_id = session.scalar(
-        select(m.Approval.id)
-        .where(
-            m.Approval.case_id == row.id,
-            m.Approval.case_version == row.version,
-            m.Approval.decision.in_(_APPROVING_DECISIONS),
-            m.Approval.amount == row.total,
-        )
-        .limit(1)
-    )
-    if approval_id is None:
+    if not has_valid_approval(session, row):
         raise NotApproved("no valid approval for the current invoice version and amount")
 
     inserted = session.execute(

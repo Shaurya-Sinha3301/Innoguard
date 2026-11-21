@@ -32,6 +32,6 @@ def publish(topic: str, payload: dict, message_id: int) -> None:
     the row and tries again later instead of blocking the dispatcher."""
     if topic != "invoice.extract":
         raise ValueError(f"unknown topic {topic}")
-    extract_invoice.apply_async(
-        args=[payload["case_id"]], task_id=f"outbox-{message_id}", retry=False
-    )
+    # Rows queued before the cases rename carry "invoice_id"; accept both.
+    case_id = payload.get("case_id") or payload["invoice_id"]
+    extract_invoice.apply_async(args=[case_id], task_id=f"outbox-{message_id}", retry=False)

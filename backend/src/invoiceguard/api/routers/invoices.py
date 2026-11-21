@@ -6,7 +6,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from invoiceguard.api import schemas
-from invoiceguard.api.auth import current_user, require_scope
+from invoiceguard.api.auth import Principal, current_user, require_scope
 from invoiceguard.api.deps import get_session
 from invoiceguard.api.ratelimit import WRITE_GUARDS
 from invoiceguard.db import models as m
@@ -203,10 +203,13 @@ def edit(
 def post(
     case_id: uuid.UUID,
     session: Session = Depends(get_session),
-    user: str = Depends(current_user),
+    who: Principal = Depends(require_scope("post")),
 ) -> schemas.PostOut:
+    if who.kind == "agent":
+        # An agent posts only through the MCP tool, with a grant a person issued for this case.
+        raise HTTPException(403, "agents post through the MCP post_case tool with a grant")
     try:
-        result = post_invoice(session, case_id, actor=user)
+        result = post_invoice(session, case_id, actor=who.name)
     except (InvoiceNotFound, NotApproved, IllegalTransition) as exc:
         raise _http_error(exc) from exc
     return schemas.PostOut(

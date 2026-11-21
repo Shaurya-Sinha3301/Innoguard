@@ -295,3 +295,48 @@ class Principal(Base):
         sa.DateTime(timezone=True), server_default=_now()
     )
     last_used_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+
+
+class Suggestion(Base):
+    """A decision an agent proposes for a case. It changes nothing: a person reads it and
+    decides for themselves."""
+
+    __tablename__ = "suggestions"
+    __table_args__ = (sa.Index("ix_suggestions_case", "case_id", "id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    case_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("cases.id"))
+    case_version: Mapped[int]
+    decision: Mapped[str] = mapped_column(sa.Text)  # approve, reject or hold
+    rationale: Mapped[str] = mapped_column(sa.Text)
+    proposed_by: Mapped[str] = mapped_column(sa.Text)
+    status: Mapped[str] = mapped_column(sa.Text, server_default="OPEN")  # OPEN or DISMISSED
+    resolved_by: Mapped[str | None] = mapped_column(sa.Text)
+    resolved_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=_now()
+    )
+
+
+class PostingGrant(Base):
+    """Permission, issued by a person, for an agent to post one approved case once.
+
+    It is bound to the case version and amount at the time of issue, expires quickly, and is
+    spent by the first successful use."""
+
+    __tablename__ = "posting_grants"
+    __table_args__ = (sa.Index("ix_posting_grants_case", "case_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        sa.Uuid, primary_key=True, server_default=sa.text("gen_random_uuid()")
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("cases.id"))
+    case_version: Mapped[int]
+    amount: Mapped[Decimal] = mapped_column(MONEY)
+    issued_by: Mapped[str] = mapped_column(sa.Text)
+    expires_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    used_by: Mapped[str | None] = mapped_column(sa.Text)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=_now()
+    )

@@ -1,13 +1,27 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from invoiceguard.api import health
 from invoiceguard.api.auth import Principal, current_principal
-from invoiceguard.api.routers import documents, invoices, metrics, packs, principals
+from invoiceguard.api.routers import agent, documents, invoices, metrics, packs, principals
 from invoiceguard.config import settings
+from invoiceguard.mcp_server import server as mcp_module
 
-app = FastAPI(title="InvoiceGuard")
+mcp_app = mcp_module.http_app()
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # The MCP transport needs its session manager running for as long as the API is.
+    async with mcp_module.mcp.session_manager.run():
+        yield
+
+
+app = FastAPI(title="InvoiceGuard", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
@@ -15,6 +29,7 @@ app.add_middleware(
     allow_headers=["X-API-Key", "Authorization", "Content-Type"],
 )
 app.include_router(invoices.router)
+app.include_router(agent.router)
 app.include_router(documents.router)
 app.include_router(metrics.router)
 app.include_router(packs.router)
@@ -40,3 +55,7 @@ def get_health() -> JSONResponse:
         {"status": "ok" if healthy else "degraded", "checks": checks},
         status_code=200 if healthy else 503,
     )
+
+
+# Last, so every API route above wins; the MCP app answers /mcp and its discovery metadata.
+app.mount("/", mcp_app)

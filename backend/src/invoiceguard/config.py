@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6380/0"
     # Reviewer identities as "key:name" pairs, comma separated. Empty means nobody can sign in.
     api_keys: str = ""
+    # Where clients reach this service (used for MCP discovery metadata and host checks).
+    public_url: str = "http://localhost:8000"
+    # The OAuth authorization server that issues tokens for the MCP endpoint. Unset means
+    # API-key mode: clients present an issued key as a bearer token.
+    mcp_issuer_url: str | None = None
+    rate_limit_mcp_per_minute: int = 60
     # Reviewer names (from API_KEYS) that may also manage principals and keys.
     admin_users: str = ""
     # Extraction provider and model. "groq" uses GROQ_API_KEY; "anthropic" uses

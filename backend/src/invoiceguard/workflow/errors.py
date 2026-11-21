@@ -16,3 +16,7 @@ class StaleVersion(WorkflowError):
 
 class NotApproved(WorkflowError):
     """Posting was attempted without a valid approval for the current invoice version."""
+
+
+class GrantInvalid(WorkflowError):
+    """A posting grant is missing, expired, already used, or for a different version or amount."""
